@@ -66,4 +66,10 @@ export class ObstacleManager {
       this.totalRecycled += 1;
     }
   }
+
+  freeze(): void {
+    for (const obstacle of this.obstacles) {
+      obstacle.setVelocityX(0);
+    }
+  }
 }

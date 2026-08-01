@@ -15,6 +15,7 @@ export class CharacterController {
   private normalBodyHeight = 0;
   private normalBodyOffsetY = 0;
   private state: CharacterState = 'idle';
+  private isDead = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.scene = scene;
@@ -49,7 +50,7 @@ export class CharacterController {
   }
 
   private onJump(): void {
-    if (this.isSliding || !this.isGrounded()) {
+    if (this.isDead || this.isSliding || !this.isGrounded()) {
       return;
     }
     this.sprite.setVelocityY(JUMP_VELOCITY);
@@ -57,7 +58,7 @@ export class CharacterController {
   }
 
   private onSlide(): void {
-    if (this.isSliding || !this.isGrounded()) {
+    if (this.isDead || this.isSliding || !this.isGrounded()) {
       return;
     }
     this.isSliding = true;
@@ -83,7 +84,21 @@ export class CharacterController {
     this.state = state;
   }
 
+  die(): void {
+    if (this.isDead) {
+      return;
+    }
+    this.isDead = true;
+    this.setState('hit');
+    this.sprite.setTint(0xff4444);
+    this.sprite.setVelocityX(0);
+  }
+
   update(): void {
+    if (this.isDead) {
+      return;
+    }
+
     if (this.isSliding && this.scene.time.now >= this.slideEndTime) {
       this.endSlide();
     }
