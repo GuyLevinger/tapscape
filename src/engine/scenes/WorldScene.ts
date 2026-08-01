@@ -8,17 +8,21 @@ import { ChunkManager } from '@/engine/ChunkManager';
 import { ObstacleManager } from '@/engine/ObstacleManager';
 import { CollisionManager } from '@/engine/CollisionManager';
 import { ScoreManager } from '@/engine/ScoreManager';
+import { CoinManager } from '@/engine/CoinManager';
 import { SCROLL_SPEED } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
+const COIN_SCORE_BONUS = 5;
 
 export class WorldScene extends Phaser.Scene {
   private character?: CharacterController;
   private ground?: InfiniteGround;
   private chunkManager?: ChunkManager;
   private obstacleManager?: ObstacleManager;
+  private coinManager?: CoinManager;
   private scoreManager?: ScoreManager;
   private scoreText?: Phaser.GameObjects.Text;
+  private coinText?: Phaser.GameObjects.Text;
   private isRunOver = false;
   private worldKey = '';
 
@@ -49,29 +53,40 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
 
+    this.scoreManager = new ScoreManager(SCROLL_SPEED);
+
     this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
+    this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
     this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT, (x, chunkWidth, chunkType) => {
       this.obstacleManager?.spawnForChunk(x, chunkWidth, chunkType);
+      this.coinManager?.spawnForChunk(x, chunkWidth, chunkType);
     });
 
     new CollisionManager(this, this.character, this.obstacleManager.group, () => this.onPlayerDied());
 
-    // Temporary overlap probe proving non-solid physics detection (distinct from the
-    // solid ground collider above); Task 15's coin system will formalize this pattern.
-    const coin = this.physics.add.image(width * 0.25, height - GROUND_HEIGHT - 200, 'coin');
-    (coin.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-    this.physics.add.overlap(this.character.gameObject, coin, () => {
-      coin.destroy();
+    this.physics.add.overlap(this.character.gameObject, this.coinManager.group, (_player, coinObj) => {
+      this.coinManager?.collect(coinObj as Phaser.Physics.Arcade.Image);
+      this.scoreManager?.addBonus(COIN_SCORE_BONUS);
     });
 
     new InputManager(this);
 
-    this.scoreManager = new ScoreManager(SCROLL_SPEED);
     this.scoreText = this.add
       .text(width - 24, 24, 'Score: 0', {
         fontFamily: 'sans-serif',
         fontSize: '20px',
         color: '#ffffff',
+        backgroundColor: '#00000055',
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
+
+    this.coinText = this.add
+      .text(width - 24, 60, 'Coins: 0', {
+        fontFamily: 'sans-serif',
+        fontSize: '18px',
+        color: '#facc15',
         backgroundColor: '#00000055',
         padding: { x: 10, y: 6 },
       })
@@ -103,16 +118,21 @@ export class WorldScene extends Phaser.Scene {
     this.ground?.update(delta);
     this.chunkManager?.update(delta);
     this.obstacleManager?.update();
+    this.coinManager?.update();
 
     this.scoreManager?.update(delta);
     if (this.scoreManager && this.scoreText) {
       this.scoreText.setText(`Score: ${this.scoreManager.score}`);
+    }
+    if (this.coinManager && this.coinText) {
+      this.coinText.setText(`Coins: ${this.coinManager.stats.totalCollected}`);
     }
   }
 
   private onPlayerDied(): void {
     this.isRunOver = true;
     this.obstacleManager?.freeze();
+    this.coinManager?.freeze();
 
     const { width, height } = this.scale;
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5).setScrollFactor(0);

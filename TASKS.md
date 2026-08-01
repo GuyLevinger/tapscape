@@ -22,7 +22,7 @@ verifies the task; see `git log` for exact commits.
 ## Milestone 2: Core game complete (Tasks 14-20)
 
 - [x] 14. Score manager — Distance scoring
-- [ ] 15. Coin system — Collectibles
+- [x] 15. Coin system — Collectibles
 - [ ] 16. Results screen — End screen
 - [ ] 17. Save manager — LocalStorage
 - [ ] 18. Audio manager — Music & SFX
