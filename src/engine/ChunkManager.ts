@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { ChunkSelector } from './ChunkSelector';
+import type { ChunkTypeDef } from '@/data/chunkTypes';
 
-const CHUNK_WIDTH = 600;
+export const CHUNK_WIDTH = 600;
 const MARKER_HEIGHT = 40;
 const SPAWN_AHEAD_MULTIPLIER = 1.5;
 const DESPAWN_BEHIND_MULTIPLIER = 1;
@@ -16,11 +17,18 @@ export class ChunkManager {
   private totalSpawned = 0;
   private totalRecycled = 0;
   private selector = new ChunkSelector();
+  private onChunkSpawned?: (x: number, width: number, chunkType: ChunkTypeDef) => void;
 
-  constructor(scene: Phaser.Scene, scrollSpeed: number, groundY: number) {
+  constructor(
+    scene: Phaser.Scene,
+    scrollSpeed: number,
+    groundY: number,
+    onChunkSpawned?: (x: number, width: number, chunkType: ChunkTypeDef) => void,
+  ) {
     this.scene = scene;
     this.scrollSpeed = scrollSpeed;
     this.groundY = groundY;
+    this.onChunkSpawned = onChunkSpawned;
 
     const seedWidth = scene.scale.width * (1 + SPAWN_AHEAD_MULTIPLIER);
     while (this.nextSpawnX < seedWidth) {
@@ -69,6 +77,8 @@ export class ChunkManager {
     this.chunks.push(container);
     this.nextSpawnX += CHUNK_WIDTH;
     this.totalSpawned += 1;
+
+    this.onChunkSpawned?.(x, CHUNK_WIDTH, chunkType);
   }
 
   update(delta: number): void {

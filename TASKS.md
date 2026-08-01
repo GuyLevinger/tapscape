@@ -16,7 +16,7 @@ verifies the task; see `git log` for exact commits.
 - [x] 9. Infinite ground — Scrolling floor
 - [x] 10. Chunk system — Chunk loading
 - [x] 11. Procedural generation — Valid chunk selection
-- [ ] 12. Obstacle manager — Obstacle spawning
+- [x] 12. Obstacle manager — Obstacle spawning
 - [ ] 13. Collision manager — Death handling
 
 ## Milestone 2: Core game complete (Tasks 14-20)
