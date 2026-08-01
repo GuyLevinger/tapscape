@@ -15,7 +15,7 @@ verifies the task; see `git log` for exact commits.
 - [x] 8. Physics — Arcade physics
 - [x] 9. Infinite ground — Scrolling floor
 - [x] 10. Chunk system — Chunk loading
-- [ ] 11. Procedural generation — Valid chunk selection
+- [x] 11. Procedural generation — Valid chunk selection
 - [ ] 12. Obstacle manager — Obstacle spawning
 - [ ] 13. Collision manager — Death handling
 

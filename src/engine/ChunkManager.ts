@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ChunkSelector } from './ChunkSelector';
 
 const CHUNK_WIDTH = 600;
 const MARKER_HEIGHT = 40;
@@ -14,6 +15,7 @@ export class ChunkManager {
   private chunkCounter = 0;
   private totalSpawned = 0;
   private totalRecycled = 0;
+  private selector = new ChunkSelector();
 
   constructor(scene: Phaser.Scene, scrollSpeed: number, groundY: number) {
     this.scene = scene;
@@ -26,24 +28,37 @@ export class ChunkManager {
     }
   }
 
-  get stats(): { active: number; totalSpawned: number; totalRecycled: number } {
-    return { active: this.chunks.length, totalSpawned: this.totalSpawned, totalRecycled: this.totalRecycled };
+  get stats(): {
+    active: number;
+    totalSpawned: number;
+    totalRecycled: number;
+    validSequence: boolean;
+    history: readonly string[];
+  } {
+    return {
+      active: this.chunks.length,
+      totalSpawned: this.totalSpawned,
+      totalRecycled: this.totalRecycled,
+      validSequence: this.selector.isValidSequence(),
+      history: this.selector.getHistory(),
+    };
   }
 
   private spawnChunk(): void {
     const id = this.chunkCounter++;
     const x = this.nextSpawnX;
+    const chunkType = this.selector.next();
 
     const marker = this.scene.add.rectangle(
       CHUNK_WIDTH / 2,
       this.groundY - MARKER_HEIGHT / 2,
       CHUNK_WIDTH - 4,
       MARKER_HEIGHT,
-      id % 2 === 0 ? 0x334155 : 0x475569,
+      chunkType.color,
       0.5,
     );
     const label = this.scene.add
-      .text(CHUNK_WIDTH / 2, this.groundY - MARKER_HEIGHT / 2, `#${id}`, {
+      .text(CHUNK_WIDTH / 2, this.groundY - MARKER_HEIGHT / 2, `#${id} (${chunkType.id})`, {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#ffffff',
