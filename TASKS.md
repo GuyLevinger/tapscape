@@ -37,7 +37,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 23. Slowgram world — World
 - [x] 24. ChatZap world — World
 - [x] 25. MeTube world — World
-- [ ] 26. WrongTurn world — World
+- [x] 26. WrongTurn world — World
 - [ ] 27. Cosmetics — Customization
 - [ ] 28. Achievements — Achievement system
 - [ ] 29. World unlocks — Progression
@@ -74,6 +74,13 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   lane-branching are structurally too different to generalize further, and the HLD's world plugin
   model says the engine should contain no world-specific logic anyway. Tasks 22-26 fill in
   `WorldContent[key]` (plus their own texture assets) rather than touching engine code.
+- **WrongTurn's signature mechanic is a visual "fork ahead" road-sign cue, not real lane-switching.**
+  The GDD's stated mechanic — "roads split into multiple lanes requiring quick choices" — needs
+  lateral player movement, lane-aware obstacle placement and new collision logic, none of which
+  exist today (the player's x position is fixed; only jump/slide exist as input). Building that is a
+  much bigger feature than any other world's mechanic in this pass, so `WrongTurnMechanic`
+  instead periodically slides in a road-sign image and fades it out — decorative only, same scope
+  level as the other 4 worlds' mechanics. Real lane-switching is future work.
 
 ## Known limitations to revisit during hardening (Task 30)
 

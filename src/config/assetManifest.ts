@@ -15,6 +15,10 @@ import chatzapPowerupUrl from '@/assets/chatzap_powerup.svg';
 import metubeObstacleUrl from '@/assets/metube_obstacle.svg';
 import metubeCoinUrl from '@/assets/metube_coin.svg';
 import metubePowerupUrl from '@/assets/metube_powerup.svg';
+import wrongturnObstacleUrl from '@/assets/wrongturn_obstacle.svg';
+import wrongturnCoinUrl from '@/assets/wrongturn_coin.svg';
+import wrongturnPowerupUrl from '@/assets/wrongturn_powerup.svg';
+import wrongturnSignUrl from '@/assets/wrongturn_sign.svg';
 import jumpSfxUrl from '@/audio/sfx_jump.wav';
 import coinSfxUrl from '@/audio/sfx_coin.wav';
 import hitSfxUrl from '@/audio/sfx_hit.wav';
@@ -45,6 +49,10 @@ export const ImageAssets: ImageAssetDef[] = [
   { key: 'metube_obstacle', url: metubeObstacleUrl, width: 48, height: 64 },
   { key: 'metube_coin', url: metubeCoinUrl, width: 32, height: 32 },
   { key: 'metube_powerup', url: metubePowerupUrl, width: 36, height: 36 },
+  { key: 'wrongturn_obstacle', url: wrongturnObstacleUrl, width: 48, height: 64 },
+  { key: 'wrongturn_coin', url: wrongturnCoinUrl, width: 32, height: 32 },
+  { key: 'wrongturn_powerup', url: wrongturnPowerupUrl, width: 36, height: 36 },
+  { key: 'wrongturn_sign', url: wrongturnSignUrl, width: 80, height: 80 },
 ];
 
 export interface AudioAssetDef {

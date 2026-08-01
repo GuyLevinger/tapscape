@@ -4,6 +4,7 @@ import { LegbookMechanic } from '@/engine/signatureMechanics/LegbookMechanic';
 import { SlowgramMechanic } from '@/engine/signatureMechanics/SlowgramMechanic';
 import { ChatZapMechanic } from '@/engine/signatureMechanics/ChatZapMechanic';
 import { MeTubeMechanic } from '@/engine/signatureMechanics/MeTubeMechanic';
+import { WrongTurnMechanic } from '@/engine/signatureMechanics/WrongTurnMechanic';
 
 export interface SignatureMechanicContext {
   character: CharacterController;
@@ -80,6 +81,14 @@ WorldContent.metube = {
   powerupTextureKey: 'metube_powerup',
   powerupName: 'Premium',
   createSignatureMechanic: (scene, ctx) => new MeTubeMechanic(scene, ctx),
+};
+
+WorldContent.wrongturn = {
+  obstacleTextureKey: 'wrongturn_obstacle',
+  coinTextureKey: 'wrongturn_coin',
+  powerupTextureKey: 'wrongturn_powerup',
+  powerupName: 'AutoPilot',
+  createSignatureMechanic: (scene, ctx) => new WrongTurnMechanic(scene, ctx),
 };
 
 export function getWorldContent(worldKey: string): WorldContentDef {
