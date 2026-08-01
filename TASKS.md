@@ -13,7 +13,7 @@ verifies the task; see `git log` for exact commits.
 - [x] 6. Character controller — Run/jump/slide — `5e06089`
 - [x] 7. Camera system — Follow camera
 - [x] 8. Physics — Arcade physics
-- [ ] 9. Infinite ground — Scrolling floor
+- [x] 9. Infinite ground — Scrolling floor
 - [ ] 10. Chunk system — Chunk loading
 - [ ] 11. Procedural generation — Valid chunk selection
 - [ ] 12. Obstacle manager — Obstacle spawning
@@ -51,3 +51,11 @@ verifies the task; see `git log` for exact commits.
 
 - Using **Phaser 4** (latest, actively maintained) instead of the Phaser 3 named in the HLD —
   no v3-specific API is relied upon, and the docs simply predate v4's release.
+
+## Known limitations to revisit during hardening (Task 30)
+
+- An extreme frame-time gap (multi-second stall — observed via a dev-tool viewport resize,
+  potentially also tab backgrounding/device lock on real devices) can still push the player
+  partway through the ground before the per-step `deltaMax` clamp (added in Task 9) fully
+  catches it. Normal gameplay, including ordinary window resizes, is unaffected. Revisit with a
+  proper "pause physics while hidden" (`visibilitychange`) handler during the performance pass.

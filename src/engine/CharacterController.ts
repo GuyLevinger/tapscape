@@ -25,6 +25,10 @@ export class CharacterController {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
     this.normalBodyHeight = body.height;
     this.normalBodyOffsetY = body.offset.y;
+    // Caps how far the body can move in a single physics step, so a large frame-time
+    // spike (tab backgrounded, device locked, slow resize) can't tunnel the player
+    // through the ground instead of colliding with it.
+    body.deltaMax.y = this.normalBodyHeight;
 
     EventBus.on(GameEvents.PLAYER_JUMPED, this.onJump, this);
     EventBus.on(GameEvents.PLAYER_SLID, this.onSlide, this);

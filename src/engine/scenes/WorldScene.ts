@@ -3,11 +3,13 @@ import { Worlds } from '@/data/worlds';
 import { InputManager } from '@/engine/InputManager';
 import { CharacterController } from '@/engine/CharacterController';
 import { CameraController } from '@/engine/CameraController';
+import { InfiniteGround } from '@/engine/InfiniteGround';
 
 const GROUND_HEIGHT = 80;
 
 export class WorldScene extends Phaser.Scene {
   private character?: CharacterController;
+  private ground?: InfiniteGround;
 
   constructor() {
     super('World');
@@ -28,12 +30,10 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0);
 
-    const groundY = height - GROUND_HEIGHT / 2;
-    const ground = this.add.rectangle(width / 2, groundY, width, GROUND_HEIGHT, 0x1e293b);
-    this.physics.add.existing(ground, true);
+    this.ground = new InfiniteGround(this, GROUND_HEIGHT, 'ground');
 
     this.character = new CharacterController(this, width * 0.25, height - GROUND_HEIGHT);
-    this.physics.add.collider(this.character.gameObject, ground);
+    this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
 
     // Temporary overlap probe proving non-solid physics detection (distinct from the
@@ -61,7 +61,8 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     this.character?.update();
+    this.ground?.update(delta);
   }
 }
