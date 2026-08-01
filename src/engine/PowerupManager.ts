@@ -1,0 +1,110 @@
+import Phaser from 'phaser';
+import type { ChunkTypeDef } from '@/data/chunkTypes';
+import { EventBus, GameEvents } from './EventBus';
+import {
+  POWERUP_EFFECT_DURATION_MS,
+  POWERUP_MAX_INTERVAL_MS,
+  POWERUP_MIN_INTERVAL_MS,
+} from '@/config/gameplayConfig';
+
+const POWERUP_HEIGHT_ABOVE_GROUND = 200;
+const DESPAWN_MARGIN = 400;
+
+// A generic, reusable power-up: pickups spawn on a randomized ~60-90s timer
+// (per the GDD) and grant temporary invincibility, the one power-up effect
+// the GDD's collision rules define ("protected by an active power-up").
+// World-specific power-ups (Verified Badge, Perfect Filter, etc.) can build
+// on this same pickup/timer/expiry framework in later per-world tasks.
+export class PowerupManager {
+  private scene: Phaser.Scene;
+  private groundY: number;
+  private scrollSpeed: number;
+  private pickups: Phaser.Physics.Arcade.Image[] = [];
+  private msUntilNextSpawn: number;
+  private effectRemainingMs = 0;
+  private totalSpawned = 0;
+  private totalCollected = 0;
+
+  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number) {
+    this.scene = scene;
+    this.groundY = groundY;
+    this.scrollSpeed = scrollSpeed;
+    this.msUntilNextSpawn = this.randomInterval();
+  }
+
+  get stats(): { active: number; totalSpawned: number; totalCollected: number } {
+    return { active: this.pickups.length, totalSpawned: this.totalSpawned, totalCollected: this.totalCollected };
+  }
+
+  get group(): Phaser.Physics.Arcade.Image[] {
+    return this.pickups;
+  }
+
+  get isEffectActive(): boolean {
+    return this.effectRemainingMs > 0;
+  }
+
+  get effectRemainingSeconds(): number {
+    return Math.ceil(this.effectRemainingMs / 1000);
+  }
+
+  private randomInterval(): number {
+    return POWERUP_MIN_INTERVAL_MS + Math.random() * (POWERUP_MAX_INTERVAL_MS - POWERUP_MIN_INTERVAL_MS);
+  }
+
+  // Hooks into ChunkManager's spawn callback like Obstacle/CoinManager, but
+  // only actually places a pickup once the randomized interval has elapsed -
+  // power-ups are far rarer than per-chunk obstacles/coins.
+  spawnForChunk(chunkX: number, chunkWidth: number, _chunkType: ChunkTypeDef): void {
+    if (this.msUntilNextSpawn > 0) {
+      return;
+    }
+
+    const x = chunkX + chunkWidth / 2;
+    const pickup = this.scene.physics.add.image(x, this.groundY - POWERUP_HEIGHT_ABOVE_GROUND, 'powerup');
+    const body = pickup.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    pickup.setVelocityX(-this.scrollSpeed);
+
+    this.pickups.push(pickup);
+    this.totalSpawned += 1;
+    this.msUntilNextSpawn = this.randomInterval();
+  }
+
+  collect(pickup: Phaser.Physics.Arcade.Image): void {
+    const index = this.pickups.indexOf(pickup);
+    if (index === -1) {
+      return;
+    }
+    this.pickups.splice(index, 1);
+    pickup.destroy();
+    this.totalCollected += 1;
+    this.effectRemainingMs = POWERUP_EFFECT_DURATION_MS;
+    EventBus.emit(GameEvents.POWERUP_PICKED);
+  }
+
+  update(delta: number): void {
+    if (this.msUntilNextSpawn > 0) {
+      this.msUntilNextSpawn -= delta;
+    }
+
+    if (this.effectRemainingMs > 0) {
+      this.effectRemainingMs = Math.max(0, this.effectRemainingMs - delta);
+      if (this.effectRemainingMs === 0) {
+        EventBus.emit(GameEvents.POWERUP_EXPIRED);
+      }
+    }
+
+    const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
+    while (this.pickups.length && this.pickups[0].x < despawnX) {
+      const pickup = this.pickups.shift();
+      pickup?.destroy();
+    }
+  }
+
+  freeze(): void {
+    for (const pickup of this.pickups) {
+      pickup.setVelocityX(0);
+    }
+  }
+}

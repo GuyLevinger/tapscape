@@ -10,9 +10,10 @@ export class CollisionManager {
     character: CharacterController,
     obstacles: Phaser.Physics.Arcade.Image[],
     onDeath: () => void,
+    isInvincible: () => boolean = () => false,
   ) {
     scene.physics.add.overlap(character.gameObject, obstacles, () => {
-      if (this.isRunOver) {
+      if (this.isRunOver || isInvincible()) {
         return;
       }
       this.isRunOver = true;

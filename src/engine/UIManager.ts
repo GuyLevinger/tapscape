@@ -4,6 +4,7 @@ import { AudioManager } from './AudioManager';
 export class UIManager {
   private scoreText: Phaser.GameObjects.Text;
   private coinText: Phaser.GameObjects.Text;
+  private powerupText: Phaser.GameObjects.Text;
   private muteButton: Phaser.GameObjects.Text;
 
   constructor(
@@ -45,6 +46,18 @@ export class UIManager {
       .setOrigin(1, 0)
       .setScrollFactor(0);
 
+    this.powerupText = scene.add
+      .text(width - 24, 96, '', {
+        fontFamily: 'sans-serif',
+        fontSize: '16px',
+        color: '#38bdf8',
+        backgroundColor: '#00000055',
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setVisible(false);
+
     const backButton = scene.add
       .text(24, 24, '< Home', {
         fontFamily: 'sans-serif',
@@ -79,5 +92,13 @@ export class UIManager {
 
   setCoins(coins: number): void {
     this.coinText.setText(`Coins: ${coins}`);
+  }
+
+  setPowerup(remainingSeconds: number | null): void {
+    if (remainingSeconds === null) {
+      this.powerupText.setVisible(false);
+      return;
+    }
+    this.powerupText.setText(`Shield: ${remainingSeconds}s`).setVisible(true);
   }
 }

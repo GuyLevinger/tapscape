@@ -13,15 +13,20 @@ export class AudioManager {
     const onJump = () => this.playSfx('sfx_jump');
     const onCoin = () => this.playSfx('sfx_coin');
     const onDied = () => this.playSfx('sfx_hit');
+    // Reuses the coin pickup tone - no dedicated power-up asset yet, matching
+    // this task's "generic framework" scope rather than adding new content.
+    const onPowerup = () => this.playSfx('sfx_coin');
 
     EventBus.on(GameEvents.PLAYER_JUMPED, onJump);
     EventBus.on(GameEvents.COIN_COLLECTED, onCoin);
     EventBus.on(GameEvents.PLAYER_DIED, onDied);
+    EventBus.on(GameEvents.POWERUP_PICKED, onPowerup);
 
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(GameEvents.PLAYER_JUMPED, onJump);
       EventBus.off(GameEvents.COIN_COLLECTED, onCoin);
       EventBus.off(GameEvents.PLAYER_DIED, onDied);
+      EventBus.off(GameEvents.POWERUP_PICKED, onPowerup);
       this.music?.stop();
     });
   }

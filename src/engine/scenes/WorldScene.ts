@@ -9,6 +9,7 @@ import { ObstacleManager } from '@/engine/ObstacleManager';
 import { CollisionManager } from '@/engine/CollisionManager';
 import { ScoreManager } from '@/engine/ScoreManager';
 import { CoinManager } from '@/engine/CoinManager';
+import { PowerupManager } from '@/engine/PowerupManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { UIManager } from '@/engine/UIManager';
 import { SCROLL_SPEED } from '@/config/gameplayConfig';
@@ -22,6 +23,7 @@ export class WorldScene extends Phaser.Scene {
   private chunkManager?: ChunkManager;
   private obstacleManager?: ObstacleManager;
   private coinManager?: CoinManager;
+  private powerupManager?: PowerupManager;
   private scoreManager?: ScoreManager;
   private audioManager?: AudioManager;
   private uiManager?: UIManager;
@@ -52,16 +54,28 @@ export class WorldScene extends Phaser.Scene {
 
     this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
     this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
+    this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
     this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT, (x, chunkWidth, chunkType) => {
       this.obstacleManager?.spawnForChunk(x, chunkWidth, chunkType);
       this.coinManager?.spawnForChunk(x, chunkWidth, chunkType);
+      this.powerupManager?.spawnForChunk(x, chunkWidth, chunkType);
     });
 
-    new CollisionManager(this, this.character, this.obstacleManager.group, () => this.onPlayerDied());
+    new CollisionManager(
+      this,
+      this.character,
+      this.obstacleManager.group,
+      () => this.onPlayerDied(),
+      () => this.powerupManager?.isEffectActive ?? false,
+    );
 
     this.physics.add.overlap(this.character.gameObject, this.coinManager.group, (_player, coinObj) => {
       this.coinManager?.collect(coinObj as Phaser.Physics.Arcade.Image);
       this.scoreManager?.addBonus(COIN_SCORE_BONUS);
+    });
+
+    this.physics.add.overlap(this.character.gameObject, this.powerupManager.group, (_player, powerupObj) => {
+      this.powerupManager?.collect(powerupObj as Phaser.Physics.Arcade.Image);
     });
 
     new InputManager(this);
@@ -85,6 +99,8 @@ export class WorldScene extends Phaser.Scene {
     this.chunkManager?.update(delta);
     this.obstacleManager?.update();
     this.coinManager?.update();
+    this.powerupManager?.update(delta);
+    this.character?.setInvincible(this.powerupManager?.isEffectActive ?? false);
 
     this.scoreManager?.update(delta);
     if (this.scoreManager) {
@@ -93,12 +109,16 @@ export class WorldScene extends Phaser.Scene {
     if (this.coinManager) {
       this.uiManager?.setCoins(this.coinManager.stats.totalCollected);
     }
+    this.uiManager?.setPowerup(
+      this.powerupManager?.isEffectActive ? this.powerupManager.effectRemainingSeconds : null,
+    );
   }
 
   private onPlayerDied(): void {
     this.isRunOver = true;
     this.obstacleManager?.freeze();
     this.coinManager?.freeze();
+    this.powerupManager?.freeze();
 
     // Brief pause so the player registers the hit before the scene switches,
     // per the GDD's "deaths should feel humorous rather than frustrating" guidance.

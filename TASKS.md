@@ -28,7 +28,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 17. Save manager — LocalStorage
 - [x] 18. Audio manager — Music & SFX
 - [x] 19. UI framework — HUD/settings
-- [ ] 20. Power-up framework — Generic effects
+- [x] 20. Power-up framework — Generic effects
 
 ## Milestone 3: MVP complete (Tasks 21-29)
 
@@ -52,6 +52,15 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 - Using **Phaser 4** (latest, actively maintained) instead of the Phaser 3 named in the HLD —
   no v3-specific API is relied upon, and the docs simply predate v4's release.
+- **Task 20's power-up framework implements one generic effect (temporary invincibility)**, not
+  the 5 named universal power-ups (Fast Charger, RAM Boost, Airplane Mode, Do Not Disturb,
+  Premium) or the 4 world-specific ones — the GDD names them but never specifies what any of
+  them mechanically *do*, and invincibility is the only effect the GDD's collision rules actually
+  define ("protected by an active power-up"). `PowerupManager` is written so a specific named
+  effect is just a different pickup texture + a different `WorldScene` reaction to
+  `GameEvents.POWERUP_PICKED`/`POWERUP_EXPIRED` — the spawn timer, pickup lifecycle, and
+  "only one active at a time" duration tracking are already generic. Naming/skinning individual
+  power-ups per-world belongs in Tasks 22-26 (the world plugin model).
 
 ## Known limitations to revisit during hardening (Task 30)
 

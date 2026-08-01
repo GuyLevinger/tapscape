@@ -84,6 +84,17 @@ export class CharacterController {
     this.state = state;
   }
 
+  setInvincible(active: boolean): void {
+    if (this.isDead) {
+      return;
+    }
+    if (active) {
+      this.sprite.setTint(0x38bdf8);
+    } else {
+      this.sprite.clearTint();
+    }
+  }
+
   die(): void {
     if (this.isDead) {
       return;

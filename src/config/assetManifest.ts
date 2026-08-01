@@ -2,6 +2,7 @@ import playerUrl from '@/assets/player.svg';
 import groundUrl from '@/assets/ground.svg';
 import coinUrl from '@/assets/coin.svg';
 import obstacleUrl from '@/assets/obstacle.svg';
+import powerupUrl from '@/assets/powerup.svg';
 import jumpSfxUrl from '@/audio/sfx_jump.wav';
 import coinSfxUrl from '@/audio/sfx_coin.wav';
 import hitSfxUrl from '@/audio/sfx_hit.wav';
@@ -19,6 +20,7 @@ export const ImageAssets: ImageAssetDef[] = [
   { key: 'ground', url: groundUrl, width: 128, height: 64 },
   { key: 'coin', url: coinUrl, width: 32, height: 32 },
   { key: 'obstacle', url: obstacleUrl, width: 48, height: 64 },
+  { key: 'powerup', url: powerupUrl, width: 36, height: 36 },
 ];
 
 export interface AudioAssetDef {
