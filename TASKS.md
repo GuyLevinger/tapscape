@@ -1,7 +1,7 @@
 # TapScape — Implementation Task Tracker
 
-Mirrors `TapScape_Task_Breakdown.pdf`. Updated after each task is implemented, verified, and
-committed. Commit hashes link to the change that completed the task.
+Mirrors `TapScape_Task_Breakdown.pdf`. Checked off in the same commit that implements and
+verifies the task; see `git log` for exact commits.
 
 ## Milestone 1: Playable prototype (Tasks 1-13)
 
