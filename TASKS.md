@@ -1,7 +1,8 @@
 # TapScape — Implementation Task Tracker
 
-Mirrors `TapScape_Task_Breakdown.pdf`. Checked off in the same commit that implements and
-verifies the task; see `git log` for exact commits.
+Mirrors `docs/task-breakdown.md` (a transcription of the original `TapScape_Task_Breakdown.pdf`).
+Checked off in the same commit that implements and verifies the task; see `git log` for exact
+commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Milestone 1: Playable prototype (Tasks 1-13)
 
