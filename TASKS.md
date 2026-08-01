@@ -12,7 +12,7 @@ verifies the task; see `git log` for exact commits.
 - [x] 5. Input manager — Unified input — `ee43cdb`
 - [x] 6. Character controller — Run/jump/slide — `5e06089`
 - [x] 7. Camera system — Follow camera
-- [ ] 8. Physics — Arcade physics
+- [x] 8. Physics — Arcade physics
 - [ ] 9. Infinite ground — Scrolling floor
 - [ ] 10. Chunk system — Chunk loading
 - [ ] 11. Procedural generation — Valid chunk selection

@@ -36,6 +36,14 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.character.gameObject, ground);
     new CameraController(this, this.character.gameObject);
 
+    // Temporary overlap probe proving non-solid physics detection (distinct from the
+    // solid ground collider above); Task 15's coin system will formalize this pattern.
+    const coin = this.physics.add.image(width * 0.25, height - GROUND_HEIGHT - 200, 'coin');
+    (coin.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    this.physics.add.overlap(this.character.gameObject, coin, () => {
+      coin.destroy();
+    });
+
     new InputManager(this);
 
     const backButton = this.add
