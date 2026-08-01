@@ -3,6 +3,7 @@ import type { CharacterController } from '@/engine/CharacterController';
 import { LegbookMechanic } from '@/engine/signatureMechanics/LegbookMechanic';
 import { SlowgramMechanic } from '@/engine/signatureMechanics/SlowgramMechanic';
 import { ChatZapMechanic } from '@/engine/signatureMechanics/ChatZapMechanic';
+import { MeTubeMechanic } from '@/engine/signatureMechanics/MeTubeMechanic';
 
 export interface SignatureMechanicContext {
   character: CharacterController;
@@ -71,6 +72,14 @@ WorldContent.chatzap = {
   powerupTextureKey: 'chatzap_powerup',
   powerupName: 'Mute Chat',
   createSignatureMechanic: (scene, ctx) => new ChatZapMechanic(scene, ctx),
+};
+
+WorldContent.metube = {
+  obstacleTextureKey: 'metube_obstacle',
+  coinTextureKey: 'metube_coin',
+  powerupTextureKey: 'metube_powerup',
+  powerupName: 'Premium',
+  createSignatureMechanic: (scene, ctx) => new MeTubeMechanic(scene, ctx),
 };
 
 export function getWorldContent(worldKey: string): WorldContentDef {

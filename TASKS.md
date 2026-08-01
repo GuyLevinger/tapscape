@@ -36,7 +36,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 22. Legbook world — Playable world
 - [x] 23. Slowgram world — World
 - [x] 24. ChatZap world — World
-- [ ] 25. MeTube world — World
+- [x] 25. MeTube world — World
 - [ ] 26. WrongTurn world — World
 - [ ] 27. Cosmetics — Customization
 - [ ] 28. Achievements — Achievement system

@@ -12,6 +12,9 @@ import slowgramPowerupUrl from '@/assets/slowgram_powerup.svg';
 import chatzapObstacleUrl from '@/assets/chatzap_obstacle.svg';
 import chatzapCoinUrl from '@/assets/chatzap_coin.svg';
 import chatzapPowerupUrl from '@/assets/chatzap_powerup.svg';
+import metubeObstacleUrl from '@/assets/metube_obstacle.svg';
+import metubeCoinUrl from '@/assets/metube_coin.svg';
+import metubePowerupUrl from '@/assets/metube_powerup.svg';
 import jumpSfxUrl from '@/audio/sfx_jump.wav';
 import coinSfxUrl from '@/audio/sfx_coin.wav';
 import hitSfxUrl from '@/audio/sfx_hit.wav';
@@ -39,6 +42,9 @@ export const ImageAssets: ImageAssetDef[] = [
   { key: 'chatzap_obstacle', url: chatzapObstacleUrl, width: 48, height: 64 },
   { key: 'chatzap_coin', url: chatzapCoinUrl, width: 32, height: 32 },
   { key: 'chatzap_powerup', url: chatzapPowerupUrl, width: 36, height: 36 },
+  { key: 'metube_obstacle', url: metubeObstacleUrl, width: 48, height: 64 },
+  { key: 'metube_coin', url: metubeCoinUrl, width: 32, height: 32 },
+  { key: 'metube_powerup', url: metubePowerupUrl, width: 36, height: 36 },
 ];
 
 export interface AudioAssetDef {
