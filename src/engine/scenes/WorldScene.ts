@@ -25,6 +25,7 @@ export class WorldScene extends Phaser.Scene {
   private coinText?: Phaser.GameObjects.Text;
   private isRunOver = false;
   private worldKey = '';
+  private worldName = '';
 
   constructor() {
     super('World');
@@ -33,6 +34,7 @@ export class WorldScene extends Phaser.Scene {
   create(data: { worldKey: string }): void {
     const world = Worlds.find((w) => w.key === data.worldKey) ?? Worlds[0];
     this.worldKey = world.key;
+    this.worldName = world.name;
     this.isRunOver = false;
     const { width, height } = this.scale;
 
@@ -134,29 +136,16 @@ export class WorldScene extends Phaser.Scene {
     this.obstacleManager?.freeze();
     this.coinManager?.freeze();
 
-    const { width, height } = this.scale;
-    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5).setScrollFactor(0);
-    this.add
-      .text(width / 2, height / 2 - 20, 'Run Over', {
-        fontFamily: 'sans-serif',
-        fontSize: '36px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0);
-    const retryButton = this.add
-      .text(width / 2, height / 2 + 30, 'Tap to Retry', {
-        fontFamily: 'sans-serif',
-        fontSize: '22px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 12, y: 8 },
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setInteractive({ useHandCursor: true });
-    retryButton.on('pointerdown', () => {
-      this.scene.restart({ worldKey: this.worldKey });
+    // Brief pause so the player registers the hit before the scene switches,
+    // per the GDD's "deaths should feel humorous rather than frustrating" guidance.
+    this.time.delayedCall(500, () => {
+      this.scene.start('Results', {
+        worldKey: this.worldKey,
+        worldName: this.worldName,
+        score: this.scoreManager?.score ?? 0,
+        distance: this.scoreManager?.distanceTraveled ?? 0,
+        coins: this.coinManager?.stats.totalCollected ?? 0,
+      });
     });
   }
 }

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { HomeScene } from './scenes/HomeScene';
 import { WorldScene } from './scenes/WorldScene';
+import { ResultsScene } from './scenes/ResultsScene';
 
 export const GameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -20,5 +21,5 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, HomeScene, WorldScene],
+  scene: [BootScene, HomeScene, WorldScene, ResultsScene],
 };
