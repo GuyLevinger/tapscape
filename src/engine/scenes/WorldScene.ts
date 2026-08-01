@@ -9,6 +9,7 @@ import { ObstacleManager } from '@/engine/ObstacleManager';
 import { CollisionManager } from '@/engine/CollisionManager';
 import { ScoreManager } from '@/engine/ScoreManager';
 import { CoinManager } from '@/engine/CoinManager';
+import { AudioManager } from '@/engine/AudioManager';
 import { SCROLL_SPEED } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
@@ -21,6 +22,7 @@ export class WorldScene extends Phaser.Scene {
   private obstacleManager?: ObstacleManager;
   private coinManager?: CoinManager;
   private scoreManager?: ScoreManager;
+  private audioManager?: AudioManager;
   private scoreText?: Phaser.GameObjects.Text;
   private coinText?: Phaser.GameObjects.Text;
   private isRunOver = false;
@@ -73,6 +75,9 @@ export class WorldScene extends Phaser.Scene {
 
     new InputManager(this);
 
+    this.audioManager = new AudioManager(this);
+    this.audioManager.playMusic('music_theme');
+
     this.scoreText = this.add
       .text(width - 24, 24, 'Score: 0', {
         fontFamily: 'sans-serif',
@@ -107,6 +112,21 @@ export class WorldScene extends Phaser.Scene {
       .setScrollFactor(0);
     backButton.on('pointerdown', () => {
       this.scene.start('Home');
+    });
+
+    const muteButton = this.add
+      .text(24, 64, this.sound.mute ? 'Unmute' : 'Mute', {
+        fontFamily: 'sans-serif',
+        fontSize: '16px',
+        color: '#ffffff',
+        backgroundColor: '#00000055',
+        padding: { x: 10, y: 6 },
+      })
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0);
+    muteButton.on('pointerdown', () => {
+      const muted = this.audioManager?.toggleMute() ?? false;
+      muteButton.setText(muted ? 'Unmute' : 'Mute');
     });
   }
 

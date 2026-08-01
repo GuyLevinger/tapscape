@@ -63,6 +63,25 @@ class SaveManagerImpl {
     return this.data.totalCoins;
   }
 
+  get settings(): SaveData['settings'] {
+    return { ...this.data.settings };
+  }
+
+  setMuted(muted: boolean): void {
+    this.data.settings.muted = muted;
+    this.persist();
+  }
+
+  setMusicVolume(volume: number): void {
+    this.data.settings.musicVolume = Math.max(0, Math.min(1, volume));
+    this.persist();
+  }
+
+  setSfxVolume(volume: number): void {
+    this.data.settings.sfxVolume = Math.max(0, Math.min(1, volume));
+    this.persist();
+  }
+
   recordRun(
     worldKey: string,
     score: number,

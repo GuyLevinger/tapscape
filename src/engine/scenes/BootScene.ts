@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ImageAssets } from '@/config/assetManifest';
+import { ImageAssets, AudioAssets } from '@/config/assetManifest';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -27,6 +27,9 @@ export class BootScene extends Phaser.Scene {
 
     for (const asset of ImageAssets) {
       this.load.image(asset.key, asset.url);
+    }
+    for (const asset of AudioAssets) {
+      this.load.audio(asset.key, asset.url);
     }
   }
 
