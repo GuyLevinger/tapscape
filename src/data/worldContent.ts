@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { CharacterController } from '@/engine/CharacterController';
 import { LegbookMechanic } from '@/engine/signatureMechanics/LegbookMechanic';
 import { SlowgramMechanic } from '@/engine/signatureMechanics/SlowgramMechanic';
+import { ChatZapMechanic } from '@/engine/signatureMechanics/ChatZapMechanic';
 
 export interface SignatureMechanicContext {
   character: CharacterController;
@@ -62,6 +63,14 @@ WorldContent.slowgram = {
   powerupTextureKey: 'slowgram_powerup',
   powerupName: 'Perfect Filter',
   createSignatureMechanic: (scene, ctx) => new SlowgramMechanic(scene, ctx),
+};
+
+WorldContent.chatzap = {
+  obstacleTextureKey: 'chatzap_obstacle',
+  coinTextureKey: 'chatzap_coin',
+  powerupTextureKey: 'chatzap_powerup',
+  powerupName: 'Mute Chat',
+  createSignatureMechanic: (scene, ctx) => new ChatZapMechanic(scene, ctx),
 };
 
 export function getWorldContent(worldKey: string): WorldContentDef {
