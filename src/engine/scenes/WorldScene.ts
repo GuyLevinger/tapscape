@@ -1,9 +1,13 @@
 import Phaser from 'phaser';
 import { Worlds } from '@/data/worlds';
 import { InputManager } from '@/engine/InputManager';
-import { EventBus, GameEvents } from '@/engine/EventBus';
+import { CharacterController } from '@/engine/CharacterController';
+
+const GROUND_HEIGHT = 80;
 
 export class WorldScene extends Phaser.Scene {
+  private character?: CharacterController;
+
   constructor() {
     super('World');
   }
@@ -15,45 +19,19 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(world.color);
 
     this.add
-      .text(width / 2, height / 2 - 60, world.name, {
+      .text(width / 2, 60, world.name, {
         fontFamily: 'sans-serif',
-        fontSize: '40px',
+        fontSize: '32px',
         color: '#ffffff',
       })
       .setOrigin(0.5);
 
-    this.add
-      .text(width / 2, height / 2 - 10, 'Gameplay coming soon', {
-        fontFamily: 'sans-serif',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    const groundY = height - GROUND_HEIGHT / 2;
+    const ground = this.add.rectangle(width / 2, groundY, width, GROUND_HEIGHT, 0x1e293b);
+    this.physics.add.existing(ground, true);
 
-    const counters = this.add
-      .text(width / 2, height / 2 + 40, 'Jumps: 0   Slides: 0', {
-        fontFamily: 'sans-serif',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    let jumps = 0;
-    let slides = 0;
-    const onJump = () => {
-      jumps += 1;
-      counters.setText(`Jumps: ${jumps}   Slides: ${slides}`);
-    };
-    const onSlide = () => {
-      slides += 1;
-      counters.setText(`Jumps: ${jumps}   Slides: ${slides}`);
-    };
-    EventBus.on(GameEvents.PLAYER_JUMPED, onJump);
-    EventBus.on(GameEvents.PLAYER_SLID, onSlide);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      EventBus.off(GameEvents.PLAYER_JUMPED, onJump);
-      EventBus.off(GameEvents.PLAYER_SLID, onSlide);
-    });
+    this.character = new CharacterController(this, width * 0.25, height - GROUND_HEIGHT);
+    this.physics.add.collider(this.character.gameObject, ground);
 
     new InputManager(this);
 
@@ -69,5 +47,9 @@ export class WorldScene extends Phaser.Scene {
     backButton.on('pointerdown', () => {
       this.scene.start('Home');
     });
+  }
+
+  update(): void {
+    this.character?.update();
   }
 }
