@@ -19,16 +19,18 @@ export class PowerupManager {
   private scene: Phaser.Scene;
   private groundY: number;
   private scrollSpeed: number;
+  private textureKey: string;
   private pickups: Phaser.Physics.Arcade.Image[] = [];
   private msUntilNextSpawn: number;
   private effectRemainingMs = 0;
   private totalSpawned = 0;
   private totalCollected = 0;
 
-  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number) {
+  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number, textureKey = 'powerup') {
     this.scene = scene;
     this.groundY = groundY;
     this.scrollSpeed = scrollSpeed;
+    this.textureKey = textureKey;
     this.msUntilNextSpawn = this.randomInterval();
   }
 
@@ -68,7 +70,7 @@ export class PowerupManager {
     }
 
     const x = chunkX + chunkWidth / 2;
-    const pickup = this.scene.physics.add.image(x, this.groundY - POWERUP_HEIGHT_ABOVE_GROUND, 'powerup');
+    const pickup = this.scene.physics.add.image(x, this.groundY - POWERUP_HEIGHT_ABOVE_GROUND, this.textureKey);
     const body = pickup.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     pickup.setVelocityX(-this.scrollSpeed);

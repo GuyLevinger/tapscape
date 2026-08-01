@@ -61,6 +61,19 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   `GameEvents.POWERUP_PICKED`/`POWERUP_EXPIRED` — the spawn timer, pickup lifecycle, and
   "only one active at a time" duration tracking are already generic. Naming/skinning individual
   power-ups per-world belongs in Tasks 22-26 (the world plugin model).
+- **Added a world-plugin extension point ahead of Tasks 22-26** (`src/data/worldContent.ts`), not
+  itself one of the 32 numbered tasks. Before Task 21, `WorldDef` had no hooks for per-world
+  obstacles/collectibles/power-ups/signature mechanics — `ObstacleManager`/`CoinManager`/
+  `PowerupManager` all hardcoded the generic texture keys. `getWorldContent(worldKey)` now
+  returns per-world texture keys, a power-up display name, and an optional
+  `createSignatureMechanic(scene, ctx) => { update(delta), destroy?() }` factory, all merged over
+  shared defaults so an unset/partial entry plays identically to the generic engine content
+  (verified: Legbook is unchanged). The signature mechanic is intentionally just a per-frame
+  update hook rather than a richer shared abstraction — Legbook's visibility-obscuring reactions,
+  Slowgram's camera flash, ChatZap's obstacle-push, MeTube's ad-interrupt and WrongTurn's
+  lane-branching are structurally too different to generalize further, and the HLD's world plugin
+  model says the engine should contain no world-specific logic anyway. Tasks 22-26 fill in
+  `WorldContent[key]` (plus their own texture assets) rather than touching engine code.
 
 ## Known limitations to revisit during hardening (Task 30)
 

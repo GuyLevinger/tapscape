@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Worlds } from '@/data/worlds';
+import { getWorldContent, type SignatureMechanic } from '@/data/worldContent';
 import { InputManager } from '@/engine/InputManager';
 import { CharacterController } from '@/engine/CharacterController';
 import { CameraController } from '@/engine/CameraController';
@@ -29,6 +30,7 @@ export class WorldScene extends Phaser.Scene {
   private difficultyManager?: DifficultyManager;
   private audioManager?: AudioManager;
   private uiManager?: UIManager;
+  private signatureMechanic?: SignatureMechanic;
   private isRunOver = false;
   private worldKey = '';
   private worldName = '';
@@ -39,6 +41,7 @@ export class WorldScene extends Phaser.Scene {
 
   create(data: { worldKey: string }): void {
     const world = Worlds.find((w) => w.key === data.worldKey) ?? Worlds[0];
+    const content = getWorldContent(world.key);
     this.worldKey = world.key;
     this.worldName = world.name;
     this.isRunOver = false;
@@ -55,9 +58,9 @@ export class WorldScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager();
     this.difficultyManager = new DifficultyManager(SCROLL_SPEED);
 
-    this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
-    this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
-    this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
+    this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.obstacleTextureKey);
+    this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.coinTextureKey);
+    this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.powerupTextureKey);
     this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT, (x, chunkWidth, chunkType) => {
       this.obstacleManager?.spawnForChunk(x, chunkWidth, chunkType);
       this.coinManager?.spawnForChunk(x, chunkWidth, chunkType);
@@ -86,8 +89,22 @@ export class WorldScene extends Phaser.Scene {
     this.audioManager = new AudioManager(this);
     this.audioManager.playMusic('music_theme');
 
-    this.uiManager = new UIManager(this, world.name, this.audioManager, () => {
-      this.scene.start('Home');
+    this.uiManager = new UIManager(
+      this,
+      world.name,
+      this.audioManager,
+      () => {
+        this.scene.start('Home');
+      },
+      content.powerupName,
+    );
+
+    this.signatureMechanic = content.createSignatureMechanic?.(this, {
+      character: this.character,
+      groundY: height - GROUND_HEIGHT,
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.signatureMechanic?.destroy?.();
     });
   }
 
@@ -114,6 +131,7 @@ export class WorldScene extends Phaser.Scene {
     this.powerupManager?.setScrollSpeed(scrollSpeed);
     this.powerupManager?.update(delta);
     this.character?.setInvincible(this.powerupManager?.isEffectActive ?? false);
+    this.signatureMechanic?.update(delta);
 
     this.scoreManager?.update(delta, scrollSpeed);
     if (this.scoreManager) {

@@ -6,13 +6,16 @@ export class UIManager {
   private coinText: Phaser.GameObjects.Text;
   private powerupText: Phaser.GameObjects.Text;
   private muteButton: Phaser.GameObjects.Text;
+  private powerupName: string;
 
   constructor(
     scene: Phaser.Scene,
     worldName: string,
     audioManager: AudioManager,
     onBack: () => void,
+    powerupName = 'Shield',
   ) {
+    this.powerupName = powerupName;
     const { width } = scene.scale;
 
     scene.add
@@ -99,6 +102,6 @@ export class UIManager {
       this.powerupText.setVisible(false);
       return;
     }
-    this.powerupText.setText(`Shield: ${remainingSeconds}s`).setVisible(true);
+    this.powerupText.setText(`${this.powerupName}: ${remainingSeconds}s`).setVisible(true);
   }
 }

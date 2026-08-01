@@ -11,14 +11,16 @@ export class CoinManager {
   private scene: Phaser.Scene;
   private groundY: number;
   private scrollSpeed: number;
+  private textureKey: string;
   private coins: Phaser.Physics.Arcade.Image[] = [];
   private totalSpawned = 0;
   private totalCollected = 0;
 
-  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number) {
+  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number, textureKey = 'coin') {
     this.scene = scene;
     this.groundY = groundY;
     this.scrollSpeed = scrollSpeed;
+    this.textureKey = textureKey;
   }
 
   get stats(): { active: number; totalSpawned: number; totalCollected: number } {
@@ -48,7 +50,7 @@ export class CoinManager {
   }
 
   private spawnCoin(x: number): void {
-    const coin = this.scene.physics.add.image(x, this.groundY - COIN_HEIGHT_ABOVE_GROUND, 'coin');
+    const coin = this.scene.physics.add.image(x, this.groundY - COIN_HEIGHT_ABOVE_GROUND, this.textureKey);
     const body = coin.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     coin.setVelocityX(-this.scrollSpeed);
