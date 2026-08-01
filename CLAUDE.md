@@ -95,6 +95,14 @@ if you need more detail than the checkbox gives you.
   (`node_modules/vite/bin/vite.js`), not `npm run dev` — a plain `npm`/`npx` invocation failed in
   this environment because the spawned process didn't inherit a PATH containing Node itself. If the
   preview server won't start, check `.claude/launch.json` still points there before debugging further.
+- **Running two sessions' dev servers at once**: if another session already has port 5173 bound,
+  the preview tool refuses to reuse it and asks you to enable `autoPort`. `autoPort: true` alone
+  isn't enough — Vite doesn't read the tool's assigned port automatically, so it falls back to its
+  own "try 5173, then increment" logic and the two disagree on which port is actually listening
+  (connection-refused on the port the tool thinks it started). Fixed by reading `process.env.PORT`
+  in `vite.config.ts`'s `server.port` (falls back to 5173 when unset, so a plain `vite` invocation
+  is unaffected). Both `.claude/launch.json` (`autoPort: true`) and `vite.config.ts` need this for
+  parallel sessions to each get a working preview.
 - **Clicking in Phaser via `preview_eval`**: Phaser's `MouseManager` listens for native
   `mousedown`/`mouseup`/`mouseup` DOM events on the canvas, **not** `pointerdown`/`pointerup`. A
   synthetic `PointerEvent` will silently do nothing. Dispatch `MouseEvent('mousedown', {clientX,

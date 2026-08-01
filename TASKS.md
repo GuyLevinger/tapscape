@@ -27,7 +27,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 16. Results screen — End screen
 - [x] 17. Save manager — LocalStorage
 - [x] 18. Audio manager — Music & SFX
-- [ ] 19. UI framework — HUD/settings
+- [x] 19. UI framework — HUD/settings
 - [ ] 20. Power-up framework — Generic effects
 
 ## Milestone 3: MVP complete (Tasks 21-29)

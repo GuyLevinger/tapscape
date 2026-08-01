@@ -10,6 +10,7 @@ import { CollisionManager } from '@/engine/CollisionManager';
 import { ScoreManager } from '@/engine/ScoreManager';
 import { CoinManager } from '@/engine/CoinManager';
 import { AudioManager } from '@/engine/AudioManager';
+import { UIManager } from '@/engine/UIManager';
 import { SCROLL_SPEED } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
@@ -23,8 +24,7 @@ export class WorldScene extends Phaser.Scene {
   private coinManager?: CoinManager;
   private scoreManager?: ScoreManager;
   private audioManager?: AudioManager;
-  private scoreText?: Phaser.GameObjects.Text;
-  private coinText?: Phaser.GameObjects.Text;
+  private uiManager?: UIManager;
   private isRunOver = false;
   private worldKey = '';
   private worldName = '';
@@ -41,15 +41,6 @@ export class WorldScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.cameras.main.setBackgroundColor(world.color);
-
-    this.add
-      .text(width / 2, 60, world.name, {
-        fontFamily: 'sans-serif',
-        fontSize: '32px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0);
 
     this.ground = new InfiniteGround(this, GROUND_HEIGHT, 'ground');
 
@@ -78,55 +69,8 @@ export class WorldScene extends Phaser.Scene {
     this.audioManager = new AudioManager(this);
     this.audioManager.playMusic('music_theme');
 
-    this.scoreText = this.add
-      .text(width - 24, 24, 'Score: 0', {
-        fontFamily: 'sans-serif',
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0);
-
-    this.coinText = this.add
-      .text(width - 24, 60, 'Coins: 0', {
-        fontFamily: 'sans-serif',
-        fontSize: '18px',
-        color: '#facc15',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0);
-
-    const backButton = this.add
-      .text(24, 24, '< Home', {
-        fontFamily: 'sans-serif',
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setInteractive({ useHandCursor: true })
-      .setScrollFactor(0);
-    backButton.on('pointerdown', () => {
+    this.uiManager = new UIManager(this, world.name, this.audioManager, () => {
       this.scene.start('Home');
-    });
-
-    const muteButton = this.add
-      .text(24, 64, this.sound.mute ? 'Unmute' : 'Mute', {
-        fontFamily: 'sans-serif',
-        fontSize: '16px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setInteractive({ useHandCursor: true })
-      .setScrollFactor(0);
-    muteButton.on('pointerdown', () => {
-      const muted = this.audioManager?.toggleMute() ?? false;
-      muteButton.setText(muted ? 'Unmute' : 'Mute');
     });
   }
 
@@ -143,11 +87,11 @@ export class WorldScene extends Phaser.Scene {
     this.coinManager?.update();
 
     this.scoreManager?.update(delta);
-    if (this.scoreManager && this.scoreText) {
-      this.scoreText.setText(`Score: ${this.scoreManager.score}`);
+    if (this.scoreManager) {
+      this.uiManager?.setScore(this.scoreManager.score);
     }
-    if (this.coinManager && this.coinText) {
-      this.coinText.setText(`Coins: ${this.coinManager.stats.totalCollected}`);
+    if (this.coinManager) {
+      this.uiManager?.setCoins(this.coinManager.stats.totalCollected);
     }
   }
 
