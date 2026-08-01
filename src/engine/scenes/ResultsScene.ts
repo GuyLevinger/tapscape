@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { recordScore } from '@/engine/SessionStats';
+import { SaveManager } from '@/save/SaveManager';
 
 export interface ResultsData {
   worldKey: string;
@@ -18,7 +18,12 @@ export class ResultsScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#111318');
 
-    const { best, isNewBest } = recordScore(data.worldKey, data.score);
+    const { highScore, isNewHighScore } = SaveManager.recordRun(
+      data.worldKey,
+      data.score,
+      data.distance,
+      data.coins,
+    );
 
     this.add
       .text(width / 2, 100, 'Run Over', {
@@ -38,7 +43,7 @@ export class ResultsScene extends Phaser.Scene {
 
     const lines = [
       `Score: ${data.score}`,
-      `Best: ${best}${isNewBest ? '  (New Best!)' : ''}`,
+      `Best: ${highScore}${isNewHighScore ? '  (New Best!)' : ''}`,
       `Distance: ${data.distance}`,
       `Coins: ${data.coins}`,
     ];
