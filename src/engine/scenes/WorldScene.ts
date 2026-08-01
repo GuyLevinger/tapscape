@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Worlds } from '@/data/worlds';
 import { InputManager } from '@/engine/InputManager';
 import { CharacterController } from '@/engine/CharacterController';
+import { CameraController } from '@/engine/CameraController';
 
 const GROUND_HEIGHT = 80;
 
@@ -24,7 +25,8 @@ export class WorldScene extends Phaser.Scene {
         fontSize: '32px',
         color: '#ffffff',
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setScrollFactor(0);
 
     const groundY = height - GROUND_HEIGHT / 2;
     const ground = this.add.rectangle(width / 2, groundY, width, GROUND_HEIGHT, 0x1e293b);
@@ -32,6 +34,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.character = new CharacterController(this, width * 0.25, height - GROUND_HEIGHT);
     this.physics.add.collider(this.character.gameObject, ground);
+    new CameraController(this, this.character.gameObject);
 
     new InputManager(this);
 
@@ -43,7 +46,8 @@ export class WorldScene extends Phaser.Scene {
         backgroundColor: '#00000055',
         padding: { x: 10, y: 6 },
       })
-      .setInteractive({ useHandCursor: true });
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0);
     backButton.on('pointerdown', () => {
       this.scene.start('Home');
     });
