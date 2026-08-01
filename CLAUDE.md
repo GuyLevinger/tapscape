@@ -103,6 +103,20 @@ if you need more detail than the checkbox gives you.
   in `vite.config.ts`'s `server.port` (falls back to 5173 when unset, so a plain `vite` invocation
   is unaffected). Both `.claude/launch.json` (`autoPort: true`) and `vite.config.ts` need this for
   parallel sessions to each get a working preview.
+- **The `Claude_Preview` MCP tool's browser tab/registry is shared across parallel worktree
+  agents**, even though each agent calls `preview_start` from its own worktree directory. Multiple
+  agents in the Tasks 22-26 fan-out independently hit the same symptom: `preview_start` reporting
+  success but the served content (or `cwd`) belonging to the main checkout or a *different* agent's
+  worktree, and the shared browser tab getting silently navigated out from under them mid-session.
+  There is no per-agent isolation to request — the fix every agent converged on independently: run
+  `vite` directly (`node.exe node_modules/vite/bin/vite.js`, own port) rooted in your own worktree
+  instead of going through `preview_start`, confirm it's actually serving your files (e.g. `curl` an
+  edited file), then either drive a `claude-in-chrome` tab against that URL, or repeatedly assert
+  `window.location.href` matches your port at the top of every `preview_eval` before trusting the
+  result (the shared tab may have been redirected elsewhere between calls). Don't spend time
+  fighting `preview_start` itself in a multi-worktree-agent context — it's a known limitation, not a
+  misconfiguration. (The orchestrating/parent session doesn't have this problem — it's specific to
+  multiple agents running concurrently.)
 - **Clicking in Phaser via `preview_eval`**: Phaser's `MouseManager` listens for native
   `mousedown`/`mouseup`/`mouseup` DOM events on the canvas, **not** `pointerdown`/`pointerup`. A
   synthetic `PointerEvent` will silently do nothing. Dispatch `MouseEvent('mousedown', {clientX,
