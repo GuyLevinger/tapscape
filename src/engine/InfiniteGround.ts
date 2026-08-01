@@ -1,13 +1,12 @@
 import Phaser from 'phaser';
-
-const DEFAULT_SCROLL_SPEED = 300;
+import { SCROLL_SPEED } from '@/config/gameplayConfig';
 
 export class InfiniteGround {
   private scene: Phaser.Scene;
   private tileSprite: Phaser.GameObjects.TileSprite;
   private scrollSpeed: number;
 
-  constructor(scene: Phaser.Scene, groundHeight: number, textureKey: string, scrollSpeed = DEFAULT_SCROLL_SPEED) {
+  constructor(scene: Phaser.Scene, groundHeight: number, textureKey: string, scrollSpeed = SCROLL_SPEED) {
     this.scene = scene;
     this.scrollSpeed = scrollSpeed;
 

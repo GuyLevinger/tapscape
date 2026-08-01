@@ -14,7 +14,7 @@ verifies the task; see `git log` for exact commits.
 - [x] 7. Camera system — Follow camera
 - [x] 8. Physics — Arcade physics
 - [x] 9. Infinite ground — Scrolling floor
-- [ ] 10. Chunk system — Chunk loading
+- [x] 10. Chunk system — Chunk loading
 - [ ] 11. Procedural generation — Valid chunk selection
 - [ ] 12. Obstacle manager — Obstacle spawning
 - [ ] 13. Collision manager — Death handling

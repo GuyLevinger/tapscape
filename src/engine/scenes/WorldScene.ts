@@ -4,12 +4,15 @@ import { InputManager } from '@/engine/InputManager';
 import { CharacterController } from '@/engine/CharacterController';
 import { CameraController } from '@/engine/CameraController';
 import { InfiniteGround } from '@/engine/InfiniteGround';
+import { ChunkManager } from '@/engine/ChunkManager';
+import { SCROLL_SPEED } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
 
 export class WorldScene extends Phaser.Scene {
   private character?: CharacterController;
   private ground?: InfiniteGround;
+  private chunkManager?: ChunkManager;
 
   constructor() {
     super('World');
@@ -35,6 +38,8 @@ export class WorldScene extends Phaser.Scene {
     this.character = new CharacterController(this, width * 0.25, height - GROUND_HEIGHT);
     this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
+
+    this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT);
 
     // Temporary overlap probe proving non-solid physics detection (distinct from the
     // solid ground collider above); Task 15's coin system will formalize this pattern.
@@ -64,5 +69,6 @@ export class WorldScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     this.character?.update();
     this.ground?.update(delta);
+    this.chunkManager?.update(delta);
   }
 }
