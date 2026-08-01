@@ -4,9 +4,24 @@ export class ChunkSelector {
   private lastType: ChunkTypeDef = ChunkTypes.easy;
   private history: string[] = [];
 
-  next(): ChunkTypeDef {
+  // `bias` (0-1) skews the pick toward higher-difficulty candidates as a run
+  // progresses - at 0 every allowed candidate is equally likely (today's
+  // behavior), at 1 harder candidates are weighted well above easier ones.
+  next(bias = 0): ChunkTypeDef {
     const candidates = this.lastType.allowedNext.map((id) => ChunkTypes[id]);
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    const weights = candidates.map((c) => 1 + bias * (c.difficulty - 1) * 3);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+    let roll = Math.random() * totalWeight;
+    let chosen = candidates[candidates.length - 1];
+    for (let i = 0; i < candidates.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) {
+        chosen = candidates[i];
+        break;
+      }
+    }
+
     this.lastType = chosen;
     this.history.push(chosen.id);
     return chosen;

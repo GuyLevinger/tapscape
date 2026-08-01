@@ -17,6 +17,7 @@ export class ChunkManager {
   private totalSpawned = 0;
   private totalRecycled = 0;
   private selector = new ChunkSelector();
+  private difficultyBias = 0;
   private onChunkSpawned?: (x: number, width: number, chunkType: ChunkTypeDef) => void;
 
   constructor(
@@ -52,10 +53,18 @@ export class ChunkManager {
     };
   }
 
+  setScrollSpeed(speed: number): void {
+    this.scrollSpeed = speed;
+  }
+
+  setDifficultyBias(bias: number): void {
+    this.difficultyBias = bias;
+  }
+
   private spawnChunk(): void {
     const id = this.chunkCounter++;
     const x = this.nextSpawnX;
-    const chunkType = this.selector.next();
+    const chunkType = this.selector.next(this.difficultyBias);
 
     const marker = this.scene.add.rectangle(
       CHUNK_WIDTH / 2,

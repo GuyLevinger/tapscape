@@ -8,6 +8,7 @@ import { ChunkManager } from '@/engine/ChunkManager';
 import { ObstacleManager } from '@/engine/ObstacleManager';
 import { CollisionManager } from '@/engine/CollisionManager';
 import { ScoreManager } from '@/engine/ScoreManager';
+import { DifficultyManager } from '@/engine/DifficultyManager';
 import { CoinManager } from '@/engine/CoinManager';
 import { PowerupManager } from '@/engine/PowerupManager';
 import { AudioManager } from '@/engine/AudioManager';
@@ -25,6 +26,7 @@ export class WorldScene extends Phaser.Scene {
   private coinManager?: CoinManager;
   private powerupManager?: PowerupManager;
   private scoreManager?: ScoreManager;
+  private difficultyManager?: DifficultyManager;
   private audioManager?: AudioManager;
   private uiManager?: UIManager;
   private isRunOver = false;
@@ -50,7 +52,8 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
 
-    this.scoreManager = new ScoreManager(SCROLL_SPEED);
+    this.scoreManager = new ScoreManager();
+    this.difficultyManager = new DifficultyManager(SCROLL_SPEED);
 
     this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
     this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
@@ -95,14 +98,24 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    this.difficultyManager?.update(delta);
+    const scrollSpeed = this.difficultyManager?.scrollSpeed ?? SCROLL_SPEED;
+    const difficultyBias = this.difficultyManager?.chunkDifficultyBias ?? 0;
+
+    this.ground?.setScrollSpeed(scrollSpeed);
     this.ground?.update(delta);
+    this.chunkManager?.setScrollSpeed(scrollSpeed);
+    this.chunkManager?.setDifficultyBias(difficultyBias);
     this.chunkManager?.update(delta);
+    this.obstacleManager?.setScrollSpeed(scrollSpeed);
     this.obstacleManager?.update();
+    this.coinManager?.setScrollSpeed(scrollSpeed);
     this.coinManager?.update();
+    this.powerupManager?.setScrollSpeed(scrollSpeed);
     this.powerupManager?.update(delta);
     this.character?.setInvincible(this.powerupManager?.isEffectActive ?? false);
 
-    this.scoreManager?.update(delta);
+    this.scoreManager?.update(delta, scrollSpeed);
     if (this.scoreManager) {
       this.uiManager?.setScore(this.scoreManager.score);
     }

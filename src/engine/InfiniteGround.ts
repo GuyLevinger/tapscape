@@ -34,6 +34,10 @@ export class InfiniteGround {
     body.updateFromGameObject();
   }
 
+  setScrollSpeed(speed: number): void {
+    this.scrollSpeed = speed;
+  }
+
   update(delta: number): void {
     this.tileSprite.tilePositionX += (this.scrollSpeed * delta) / 1000;
   }

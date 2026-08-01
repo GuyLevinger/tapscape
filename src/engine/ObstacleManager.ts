@@ -31,6 +31,13 @@ export class ObstacleManager {
     return this.obstacles;
   }
 
+  setScrollSpeed(speed: number): void {
+    this.scrollSpeed = speed;
+    for (const obstacle of this.obstacles) {
+      obstacle.setVelocityX(-speed);
+    }
+  }
+
   spawnForChunk(chunkX: number, chunkWidth: number, chunkType: ChunkTypeDef): void {
     const usableWidth = chunkWidth - EDGE_MARGIN * 2;
     if (usableWidth < 0) {

@@ -52,6 +52,13 @@ export class PowerupManager {
     return POWERUP_MIN_INTERVAL_MS + Math.random() * (POWERUP_MAX_INTERVAL_MS - POWERUP_MIN_INTERVAL_MS);
   }
 
+  setScrollSpeed(speed: number): void {
+    this.scrollSpeed = speed;
+    for (const pickup of this.pickups) {
+      pickup.setVelocityX(-speed);
+    }
+  }
+
   // Hooks into ChunkManager's spawn callback like Obstacle/CoinManager, but
   // only actually places a pickup once the randomized interval has elapsed -
   // power-ups are far rarer than per-chunk obstacles/coins.

@@ -32,7 +32,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Milestone 3: MVP complete (Tasks 21-29)
 
-- [ ] 21. Difficulty scaling — Progression
+- [x] 21. Difficulty scaling — Progression
 - [ ] 22. Legbook world — Playable world
 - [ ] 23. Slowgram world — World
 - [ ] 24. ChatZap world — World

@@ -29,6 +29,13 @@ export class CoinManager {
     return this.coins;
   }
 
+  setScrollSpeed(speed: number): void {
+    this.scrollSpeed = speed;
+    for (const coin of this.coins) {
+      coin.setVelocityX(-speed);
+    }
+  }
+
   // Chunk type is currently unused (a flat line-of-3 formation, per the GDD's
   // recognizable formation guidance) but kept in the signature to mirror
   // ObstacleManager's shape, since later formations will vary with difficulty.
