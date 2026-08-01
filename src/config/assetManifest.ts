@@ -6,6 +6,9 @@ import powerupUrl from '@/assets/powerup.svg';
 import legbookObstacleUrl from '@/assets/legbook_obstacle.svg';
 import legbookCoinUrl from '@/assets/legbook_coin.svg';
 import legbookPowerupUrl from '@/assets/legbook_powerup.svg';
+import slowgramObstacleUrl from '@/assets/slowgram_obstacle.svg';
+import slowgramCoinUrl from '@/assets/slowgram_coin.svg';
+import slowgramPowerupUrl from '@/assets/slowgram_powerup.svg';
 import jumpSfxUrl from '@/audio/sfx_jump.wav';
 import coinSfxUrl from '@/audio/sfx_coin.wav';
 import hitSfxUrl from '@/audio/sfx_hit.wav';
@@ -27,6 +30,9 @@ export const ImageAssets: ImageAssetDef[] = [
   { key: 'legbook_obstacle', url: legbookObstacleUrl, width: 48, height: 64 },
   { key: 'legbook_coin', url: legbookCoinUrl, width: 32, height: 32 },
   { key: 'legbook_powerup', url: legbookPowerupUrl, width: 36, height: 36 },
+  { key: 'slowgram_obstacle', url: slowgramObstacleUrl, width: 48, height: 64 },
+  { key: 'slowgram_coin', url: slowgramCoinUrl, width: 32, height: 32 },
+  { key: 'slowgram_powerup', url: slowgramPowerupUrl, width: 36, height: 36 },
 ];
 
 export interface AudioAssetDef {

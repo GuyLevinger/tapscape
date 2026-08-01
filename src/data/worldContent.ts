@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { CharacterController } from '@/engine/CharacterController';
 import { LegbookMechanic } from '@/engine/signatureMechanics/LegbookMechanic';
+import { SlowgramMechanic } from '@/engine/signatureMechanics/SlowgramMechanic';
 
 export interface SignatureMechanicContext {
   character: CharacterController;
@@ -53,6 +54,14 @@ WorldContent.legbook = {
   powerupTextureKey: 'legbook_powerup',
   powerupName: 'Verified Badge',
   createSignatureMechanic: (scene, ctx) => new LegbookMechanic(scene, ctx),
+};
+
+WorldContent.slowgram = {
+  obstacleTextureKey: 'slowgram_obstacle',
+  coinTextureKey: 'slowgram_coin',
+  powerupTextureKey: 'slowgram_powerup',
+  powerupName: 'Perfect Filter',
+  createSignatureMechanic: (scene, ctx) => new SlowgramMechanic(scene, ctx),
 };
 
 export function getWorldContent(worldKey: string): WorldContentDef {

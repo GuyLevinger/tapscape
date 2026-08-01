@@ -34,7 +34,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 - [x] 21. Difficulty scaling — Progression
 - [x] 22. Legbook world — Playable world
-- [ ] 23. Slowgram world — World
+- [x] 23. Slowgram world — World
 - [ ] 24. ChatZap world — World
 - [ ] 25. MeTube world — World
 - [ ] 26. WrongTurn world — World
