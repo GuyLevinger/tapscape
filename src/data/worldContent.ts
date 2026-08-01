@@ -4,6 +4,11 @@ import type { CharacterController } from '@/engine/CharacterController';
 export interface SignatureMechanicContext {
   character: CharacterController;
   groundY: number;
+  // Live reference to the active obstacle bodies (e.g. for a mechanic like
+  // ChatZap's "incoming messages push nearby obstacles"). The array
+  // instance itself doesn't change, only its contents each frame - it's the
+  // same array ObstacleManager.group returns.
+  getObstacles: () => Phaser.Physics.Arcade.Image[];
 }
 
 // A world's signature mechanic (Legbook's obscuring reactions, Slowgram's

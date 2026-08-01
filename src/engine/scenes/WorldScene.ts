@@ -102,6 +102,7 @@ export class WorldScene extends Phaser.Scene {
     this.signatureMechanic = content.createSignatureMechanic?.(this, {
       character: this.character,
       groundY: height - GROUND_HEIGHT,
+      getObstacles: () => this.obstacleManager?.group ?? [],
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.signatureMechanic?.destroy?.();
