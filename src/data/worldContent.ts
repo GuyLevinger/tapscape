@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { CharacterController } from '@/engine/CharacterController';
+import { LegbookMechanic } from '@/engine/signatureMechanics/LegbookMechanic';
 
 export interface SignatureMechanicContext {
   character: CharacterController;
@@ -45,6 +46,14 @@ export const DefaultWorldContent: WorldContentDef = {
 // Worlds fill these in (textures, power-up name, signature mechanic) as
 // part of their own task (22-26) rather than here.
 export const WorldContent: Record<string, Partial<WorldContentDef>> = {};
+
+WorldContent.legbook = {
+  obstacleTextureKey: 'legbook_obstacle',
+  coinTextureKey: 'legbook_coin',
+  powerupTextureKey: 'legbook_powerup',
+  powerupName: 'Verified Badge',
+  createSignatureMechanic: (scene, ctx) => new LegbookMechanic(scene, ctx),
+};
 
 export function getWorldContent(worldKey: string): WorldContentDef {
   return { ...DefaultWorldContent, ...WorldContent[worldKey] };
