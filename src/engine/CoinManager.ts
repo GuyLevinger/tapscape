@@ -13,6 +13,9 @@ export class CoinManager {
   private scrollSpeed: number;
   private textureKey: string;
   private coins: Phaser.Physics.Arcade.Image[] = [];
+  // Inactive Images kept around instead of destroyed, so a later spawn can reuse the GameObject +
+  // Arcade Body instead of paying allocation/GC cost every ~1-2s a chunk recycles.
+  private pool: Phaser.Physics.Arcade.Image[] = [];
   private totalSpawned = 0;
   private totalCollected = 0;
 
@@ -50,13 +53,26 @@ export class CoinManager {
   }
 
   private spawnCoin(x: number): void {
-    const coin = this.scene.physics.add.image(x, this.groundY - COIN_HEIGHT_ABOVE_GROUND, this.textureKey);
+    const y = this.groundY - COIN_HEIGHT_ABOVE_GROUND;
+    const coin = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
+    coin.setPosition(x, y);
+    coin.setActive(true);
+    coin.setVisible(true);
     const body = coin.body as Phaser.Physics.Arcade.Body;
+    body.enable = true;
     body.setAllowGravity(false);
     coin.setVelocityX(-this.scrollSpeed);
 
     this.coins.push(coin);
     this.totalSpawned += 1;
+  }
+
+  private recycle(coin: Phaser.Physics.Arcade.Image): void {
+    coin.setActive(false);
+    coin.setVisible(false);
+    coin.setVelocity(0, 0);
+    (coin.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.pool.push(coin);
   }
 
   collect(coin: Phaser.Physics.Arcade.Image): void {
@@ -65,7 +81,7 @@ export class CoinManager {
       return;
     }
     this.coins.splice(index, 1);
-    coin.destroy();
+    this.recycle(coin);
     this.totalCollected += 1;
     EventBus.emit(GameEvents.COIN_COLLECTED);
   }
@@ -74,7 +90,9 @@ export class CoinManager {
     const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
     while (this.coins.length && this.coins[0].x < despawnX) {
       const coin = this.coins.shift();
-      coin?.destroy();
+      if (coin) {
+        this.recycle(coin);
+      }
     }
   }
 

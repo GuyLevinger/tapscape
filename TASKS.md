@@ -44,7 +44,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Milestone 4: Release (Tasks 30-32)
 
-- [ ] 30. Performance pass — Optimization
+- [x] 30. Performance pass — Optimization
 - [ ] 31. Polish — FX & animations
 - [ ] 32. Release — Production build
 
@@ -179,10 +179,43 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   deducts coins and immediately makes the world playable end-to-end (through Results, with the
   matching "Try &lt;World&gt;" achievement firing), and the unlock persists across a reload.
 
-## Known limitations to revisit during hardening (Task 30)
+- **Task 30 targets the HLD's "object pooling" technique specifically, not sprite atlases or
+  lazy-loading** (the other two techniques the HLD's Performance section names alongside chunk
+  recycling, which Task 10 already covers). `ObstacleManager`, `CoinManager`, and `PowerupManager`
+  previously called `scene.physics.add.image(...)` on every spawn and `.destroy()` on every
+  despawn - real allocation/GC churn every time a chunk recycles (~every 1-2s during a run), which
+  is exactly what the HLD calls out object pooling to avoid. All three now keep a `pool` array of
+  inactive Images and reuse them (`setActive`/`setVisible`/`body.enable` toggled instead of
+  create/destroy) rather than being pushed through Phaser's Group class, since the existing
+  `.group` getter (a plain array) is already what `CollisionManager` and `WorldScene`'s
+  `physics.add.overlap` calls are wired against - reusing that contract kept the change scoped to
+  the three managers instead of also touching collision wiring. Atlases and lazy-loading were
+  judged out of scope: the full asset set is 20 small hand-drawn SVGs + 4 short synthesized tones,
+  and a production build (`vite build`) completes in well under half a second at ~372 kB gzipped -
+  there's no load-time problem those techniques would be fixing. Verified live: after warming a
+  run's pool via chunk recycling, `totalSpawned` on all three managers stayed flat while
+  `totalRecycled` climbed, confirming spawns are being satisfied from the pool rather than
+  allocating new GameObjects; collision-into-Results and coin-collection-into-pool (body disabled,
+  hidden, texture/hitbox correctly re-derived from the reused Image's frame size rather than its
+  already-shrunk body) both still behaved identically to before the change.
+- **Also stripped `ChunkManager`'s per-chunk debug rectangle+text label from production builds**,
+  discovered while investigating Task 30's per-recycle costs - it's a Task 10/11-era dev aid
+  (visually confirming chunk-type sequencing) that was never gated and so was rendering on top of
+  live gameplay unconditionally, and a `Text` object's canvas-texture generation is a real cost to
+  pay on every chunk recycle for something the GDD never calls for. Now gated behind
+  `import.meta.env.DEV`, kept (not deleted) since it's still a useful dev tool for verifying
+  `ChunkSelector` sequencing. Verified the label/marker code is fully dead-code-eliminated from the
+  production bundle (grepped the built JS for the marker's distinguishing style - absent - vs. the
+  dev server, where it's present and still updates correctly).
+
+## Known limitations still open after Task 30
 
 - An extreme frame-time gap (multi-second stall — observed via a dev-tool viewport resize,
   potentially also tab backgrounding/device lock on real devices) can still push the player
   partway through the ground before the per-step `deltaMax` clamp (added in Task 9) fully
-  catches it. Normal gameplay, including ordinary window resizes, is unaffected. Revisit with a
-  proper "pause physics while hidden" (`visibilitychange`) handler during the performance pass.
+  catches it. Normal gameplay, including ordinary window resizes, is unaffected. Deliberately not
+  addressed in Task 30: the reported repro is a dev-tool viewport *resize*, not a hidden/backgrounded
+  tab, so a `visibilitychange` handler wouldn't actually fix it - the real fix is a general
+  delta-clamp at the scene/game-loop level, which is a bigger change than Task 30's "60 FPS" scope
+  covers. Still worth a dedicated pass (Task 31 or 32) rather than folding it into either
+  unrelated.

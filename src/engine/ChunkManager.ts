@@ -66,23 +66,30 @@ export class ChunkManager {
     const x = this.nextSpawnX;
     const chunkType = this.selector.next(this.difficultyBias);
 
-    const marker = this.scene.add.rectangle(
-      CHUNK_WIDTH / 2,
-      this.groundY - MARKER_HEIGHT / 2,
-      CHUNK_WIDTH - 4,
-      MARKER_HEIGHT,
-      chunkType.color,
-      0.5,
-    );
-    const label = this.scene.add
-      .text(CHUNK_WIDTH / 2, this.groundY - MARKER_HEIGHT / 2, `#${id} (${chunkType.id})`, {
-        fontFamily: 'sans-serif',
-        fontSize: '16px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    // Chunk-type markers are a dev-only debugging aid for verifying valid chunk sequences (Task
+    // 11) - a Text object per chunk is a real per-recycle cost (canvas texture generation) and was
+    // never part of the shipped visual design, so it's stripped from production builds.
+    const children: Phaser.GameObjects.GameObject[] = [];
+    if (import.meta.env.DEV) {
+      const marker = this.scene.add.rectangle(
+        CHUNK_WIDTH / 2,
+        this.groundY - MARKER_HEIGHT / 2,
+        CHUNK_WIDTH - 4,
+        MARKER_HEIGHT,
+        chunkType.color,
+        0.5,
+      );
+      const label = this.scene.add
+        .text(CHUNK_WIDTH / 2, this.groundY - MARKER_HEIGHT / 2, `#${id} (${chunkType.id})`, {
+          fontFamily: 'sans-serif',
+          fontSize: '16px',
+          color: '#ffffff',
+        })
+        .setOrigin(0.5);
+      children.push(marker, label);
+    }
 
-    const container = this.scene.add.container(x, 0, [marker, label]);
+    const container = this.scene.add.container(x, 0, children);
     this.chunks.push(container);
     this.nextSpawnX += CHUNK_WIDTH;
     this.totalSpawned += 1;

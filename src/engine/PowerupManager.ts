@@ -21,6 +21,9 @@ export class PowerupManager {
   private scrollSpeed: number;
   private textureKey: string;
   private pickups: Phaser.Physics.Arcade.Image[] = [];
+  // Inactive Images kept around instead of destroyed, so a later spawn can reuse the GameObject +
+  // Arcade Body instead of paying allocation/GC cost.
+  private pool: Phaser.Physics.Arcade.Image[] = [];
   private msUntilNextSpawn: number;
   private effectRemainingMs = 0;
   private totalSpawned = 0;
@@ -70,8 +73,13 @@ export class PowerupManager {
     }
 
     const x = chunkX + chunkWidth / 2;
-    const pickup = this.scene.physics.add.image(x, this.groundY - POWERUP_HEIGHT_ABOVE_GROUND, this.textureKey);
+    const y = this.groundY - POWERUP_HEIGHT_ABOVE_GROUND;
+    const pickup = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
+    pickup.setPosition(x, y);
+    pickup.setActive(true);
+    pickup.setVisible(true);
     const body = pickup.body as Phaser.Physics.Arcade.Body;
+    body.enable = true;
     body.setAllowGravity(false);
     pickup.setVelocityX(-this.scrollSpeed);
 
@@ -80,13 +88,21 @@ export class PowerupManager {
     this.msUntilNextSpawn = this.randomInterval();
   }
 
+  private recycle(pickup: Phaser.Physics.Arcade.Image): void {
+    pickup.setActive(false);
+    pickup.setVisible(false);
+    pickup.setVelocity(0, 0);
+    (pickup.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.pool.push(pickup);
+  }
+
   collect(pickup: Phaser.Physics.Arcade.Image): void {
     const index = this.pickups.indexOf(pickup);
     if (index === -1) {
       return;
     }
     this.pickups.splice(index, 1);
-    pickup.destroy();
+    this.recycle(pickup);
     this.totalCollected += 1;
     this.effectRemainingMs = POWERUP_EFFECT_DURATION_MS;
     EventBus.emit(GameEvents.POWERUP_PICKED);
@@ -107,7 +123,9 @@ export class PowerupManager {
     const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
     while (this.pickups.length && this.pickups[0].x < despawnX) {
       const pickup = this.pickups.shift();
-      pickup?.destroy();
+      if (pickup) {
+        this.recycle(pickup);
+      }
     }
   }
 

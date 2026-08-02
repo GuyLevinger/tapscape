@@ -32,6 +32,9 @@ export class ObstacleManager {
   private obstacleFreeUntilX: number;
   private lastObstacleX = -Infinity;
   private obstacles: Phaser.Physics.Arcade.Image[] = [];
+  // Inactive Images kept around instead of destroyed, so a later spawn can reuse the GameObject +
+  // Arcade Body instead of paying allocation/GC cost every ~1-2s a chunk recycles.
+  private pool: Phaser.Physics.Arcade.Image[] = [];
   private totalSpawned = 0;
   private totalRecycled = 0;
 
@@ -91,13 +94,20 @@ export class ObstacleManager {
       return;
     }
 
-    const obstacle = this.scene.physics.add.image(x, this.groundY, this.textureKey);
+    const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, this.groundY, this.textureKey);
+    obstacle.setPosition(x, this.groundY);
+    obstacle.setTexture(this.textureKey);
     obstacle.setOrigin(0.5, 1);
+    obstacle.setActive(true);
+    obstacle.setVisible(true);
     const body = obstacle.body as Phaser.Physics.Arcade.Body;
+    body.enable = true;
     body.setAllowGravity(false);
 
-    const fullWidth = body.width;
-    const fullHeight = body.height;
+    // Use the display frame's size, not the body's - a reused pooled Image's body may already be
+    // shrunk from its previous spawn, and re-deriving the hitbox from that would shrink it again.
+    const fullWidth = obstacle.width;
+    const fullHeight = obstacle.height;
     const hitboxWidth = fullWidth * HITBOX_WIDTH_RATIO;
     const hitboxHeight = fullHeight * HITBOX_HEIGHT_RATIO;
     body.setSize(hitboxWidth, hitboxHeight);
@@ -114,7 +124,13 @@ export class ObstacleManager {
     const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
     while (this.obstacles.length && this.obstacles[0].x < despawnX) {
       const obstacle = this.obstacles.shift();
-      obstacle?.destroy();
+      if (obstacle) {
+        obstacle.setActive(false);
+        obstacle.setVisible(false);
+        obstacle.setVelocity(0, 0);
+        (obstacle.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.pool.push(obstacle);
+      }
       this.totalRecycled += 1;
     }
   }
