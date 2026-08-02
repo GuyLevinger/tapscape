@@ -83,10 +83,13 @@ export class UIManager {
       .setOrigin(1, 0.5)
       .setScrollFactor(0);
 
+    // Anchored off the bar's actual bottom edge rather than a hardcoded y - the padding/notch
+    // rework moved the bar down from the canvas top, and this text was left behind at its old
+    // fixed position, so it ended up overlapping and spilling below the (now lower) bar.
     scene.add
-      .text(width / 2, 60, worldName, {
+      .text(width / 2, frame.statusBarBottomY + 26, worldName, {
         fontFamily: 'sans-serif',
-        fontSize: '32px',
+        fontSize: '28px',
         color: '#ffffff',
       })
       .setOrigin(0.5)

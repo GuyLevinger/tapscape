@@ -276,6 +276,24 @@ tasks started, to avoid an architecture change partway through:
   the status bar flush against the border top-to-bottom with no gap, and its top-right corner
   sitting cleanly inside the frame's curve instead of poking through it.
 
+- **Eighth round of user refinements: a remaining corner leak in the white backdrop, and the
+  in-run world-name title overlapping the status bar.** (1) The white backdrop's four edge strips
+  (added last round) tile everything outside the phone's *bounding box*, but the box's own sharp
+  corners still poke past the border's actual rounded outer edge - a small sliver where the
+  scene's background color kept leaking through between the sharp corner and the curve. Added
+  `fillCornerNotch` (a `Graphics` path: two straight edges from the bounding-box corner joined by
+  a concave arc, filled as one shape) and called it for all four corners with a generously large
+  radius (`CORNER_RADIUS + BEZEL_THICKNESS`, bigger than the border's true outer radius) so the
+  notch comfortably undercuts the border with margin to spare rather than risking a hairline gap
+  from an exact-radius match. (2) `UIManager`'s world-name title (e.g. "Legbook") was still
+  positioned at a hardcoded `y=60` left over from before the padding/notch rework - since the bar
+  itself moved down (from the canvas top to `screenY0`, now ~34px lower), the title's fixed
+  position increasingly overlapped and spilled below the bar. Repositioned to
+  `frame.statusBarBottomY + 26` (anchored off the bar's real position rather than a magic number)
+  and trimmed the font slightly (32px -> 28px) for extra margin. Verified live: screenshots of
+  Home/World/Results show clean rounded corners with no background leak in any corner, and
+  "Legbook" sitting with a clear gap below the status bar instead of overlapping it.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

@@ -133,6 +133,18 @@ export class PhoneFrame {
     backdrop.fillRect(0, outerY0, outerX0, outerY1 - outerY0);
     backdrop.fillRect(outerX1, outerY0, width - outerX1, outerY1 - outerY0);
 
+    // The four strips above tile everything OUTSIDE the phone's bounding box, but the box's own
+    // sharp corners still poke past the border's rounded outer edge - the sliver of scene
+    // background between the sharp corner and the curve. A generous radius (bigger than the
+    // border's true outer radius, CORNER_RADIUS + half the bezel thickness) guarantees the notch
+    // fully undercuts the border with margin to spare, since the border is drawn on top of it
+    // right after and safely covers any overshoot.
+    const notchCornerRadius = CORNER_RADIUS + BEZEL_THICKNESS;
+    fillCornerNotch(backdrop, outerX0, outerY0, 1, 1, notchCornerRadius, -90, -180, true);
+    fillCornerNotch(backdrop, outerX1, outerY0, -1, 1, notchCornerRadius, -90, 0, false);
+    fillCornerNotch(backdrop, outerX0, outerY1, 1, -1, notchCornerRadius, 90, 180, false);
+    fillCornerNotch(backdrop, outerX1, outerY1, -1, -1, notchCornerRadius, 90, 0, true);
+
     // A soft drop shadow (a slightly larger, faint rounded rect offset down-right) sits behind the
     // body outline to lift it off the background, then the body itself - both just strokes, so
     // nothing behind them (a scene's own content) is ever painted over.
@@ -273,4 +285,37 @@ export class PhoneFrame {
 
 function formatClockTime(): string {
   return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+// Fills the sliver between a bounding box's sharp corner (cx, cy) and a rounded corner's arc of
+// the given radius - i.e. a square-minus-quarter-circle "notch". (dx, dy) point from the corner
+// toward the shape's interior (e.g. +1,+1 for a top-left corner, whose rounding curves down-right).
+// startDeg/endDeg/anticlockwise describe the arc from the corner's horizontal tangent point to its
+// vertical tangent point, the short way (through the corner's own quadrant) - precomputed per
+// corner by the caller since the direction flips with (dx, dy).
+function fillCornerNotch(
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  cy: number,
+  dx: number,
+  dy: number,
+  radius: number,
+  startDeg: number,
+  endDeg: number,
+  anticlockwise: boolean,
+): void {
+  g.beginPath();
+  g.moveTo(cx, cy);
+  g.lineTo(cx + dx * radius, cy);
+  g.arc(
+    cx + dx * radius,
+    cy + dy * radius,
+    radius,
+    Phaser.Math.DegToRad(startDeg),
+    Phaser.Math.DegToRad(endDeg),
+    anticlockwise,
+  );
+  g.lineTo(cx, cy);
+  g.closePath();
+  g.fillPath();
 }
