@@ -12,8 +12,14 @@ export class CollisionManager {
     onDeath: () => void,
     isInvincible: () => boolean = () => false,
   ) {
-    scene.physics.add.overlap(character.gameObject, obstacles, () => {
+    scene.physics.add.overlap(character.gameObject, obstacles, (_player, obstacleObj) => {
       if (this.isRunOver || isInvincible()) {
+        return;
+      }
+      // Laser gates (Task 37) are only lethal while cycled to their "on" phase - overlapping one
+      // during "off"/"warning" is exactly the intended safe passage, not a near-miss to forgive.
+      const obstacle = obstacleObj as Phaser.Physics.Arcade.Image;
+      if (obstacle.getData('variant') === 'laser' && obstacle.getData('laserPhase') !== 'on') {
         return;
       }
       this.isRunOver = true;

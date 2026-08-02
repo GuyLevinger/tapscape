@@ -63,6 +63,31 @@ const GAP_CHANCE = 0.1;
 const GAP_COUNT = 6;
 const GAP_SPACING = 55;
 
+// A pulsing gate: a ground-anchored piece and an overhead-anchored piece at the same x, sharing one
+// timer, together spanning the player's entire reachable vertical range (standing/sliding hitbox up
+// to ~102px, jump apex up to ~150px, leaving only a 98px unguarded band - too narrow for the ~102px
+// standing/jumping hitbox to ever fit inside). That makes the *only* way through timing, not a
+// jump/slide maneuver: wait for the "off" phase. Cycles off (safe) -> warning (yellow, still safe,
+// a heads-up) -> on (red, lethal) -> back to off. Reuses the plain ground/overhead placement/hitbox
+// code from Tasks 33-34 and only re-tags `variant` to `'laser'` afterward, so positioning stays
+// identical to the already-verified variants - tint is the only new visual, no new art.
+const LASER_CHANCE = 0.1;
+const LASER_OFF_MS = 1500;
+const LASER_WARNING_MS = 500;
+const LASER_ON_MS = 1500;
+const LASER_OFF_TINT = 0x64748b;
+const LASER_WARNING_TINT = 0xfacc15;
+const LASER_ON_TINT = 0xff4444;
+
+type LaserPhase = 'off' | 'warning' | 'on';
+
+interface LaserGate {
+  ground: Phaser.Physics.Arcade.Image;
+  overhead: Phaser.Physics.Arcade.Image;
+  phase: LaserPhase;
+  phaseEndTime: number;
+}
+
 export type ObstacleVariant = 'ground' | 'overhead';
 
 export class ObstacleManager {
@@ -76,6 +101,7 @@ export class ObstacleManager {
   // Inactive Images kept around instead of destroyed, so a later spawn can reuse the GameObject +
   // Arcade Body instead of paying allocation/GC cost every ~1-2s a chunk recycles.
   private pool: Phaser.Physics.Arcade.Image[] = [];
+  private laserGates: LaserGate[] = [];
   private totalSpawned = 0;
   private totalRecycled = 0;
 
@@ -131,6 +157,8 @@ export class ObstacleManager {
         this.spawnSlalom(x);
       } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE + GAP_CHANCE) {
         this.spawnGap(x);
+      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE + GAP_CHANCE + LASER_CHANCE) {
+        this.spawnLaserGate(x);
       } else {
         this.spawnObstacle(x);
       }
@@ -198,6 +226,56 @@ export class ObstacleManager {
     this.lastObstacleX = startX + (GAP_COUNT - 1) * GAP_SPACING;
   }
 
+  // A pulsing gate - see the constant comment above for why waiting is the only way through.
+  private spawnLaserGate(centerX: number): void {
+    if (!this.canPlaceAt(centerX)) {
+      return;
+    }
+    const ground = this.placeObstacle(centerX, 'ground');
+    const overhead = this.placeObstacle(centerX, 'overhead');
+    ground.setData('variant', 'laser');
+    overhead.setData('variant', 'laser');
+    const gate: LaserGate = { ground, overhead, phase: 'off', phaseEndTime: this.scene.time.now + LASER_OFF_MS };
+    this.applyLaserPhase(gate);
+    this.laserGates.push(gate);
+    this.lastObstacleX = centerX;
+  }
+
+  private applyLaserPhase(gate: LaserGate): void {
+    const tint =
+      gate.phase === 'off' ? LASER_OFF_TINT : gate.phase === 'warning' ? LASER_WARNING_TINT : LASER_ON_TINT;
+    gate.ground.setTint(tint);
+    gate.overhead.setTint(tint);
+    gate.ground.setData('laserPhase', gate.phase);
+    gate.overhead.setData('laserPhase', gate.phase);
+  }
+
+  private updateLaserGates(): void {
+    const now = this.scene.time.now;
+    for (let i = this.laserGates.length - 1; i >= 0; i--) {
+      const gate = this.laserGates[i];
+      if (!gate.ground.active) {
+        // Recycled by the normal despawn pass below - stop ticking a timer nobody can see.
+        this.laserGates.splice(i, 1);
+        continue;
+      }
+      if (now < gate.phaseEndTime) {
+        continue;
+      }
+      if (gate.phase === 'off') {
+        gate.phase = 'warning';
+        gate.phaseEndTime = now + LASER_WARNING_MS;
+      } else if (gate.phase === 'warning') {
+        gate.phase = 'on';
+        gate.phaseEndTime = now + LASER_ON_MS;
+      } else {
+        gate.phase = 'off';
+        gate.phaseEndTime = now + LASER_OFF_MS;
+      }
+      this.applyLaserPhase(gate);
+    }
+  }
+
   private canPlaceAt(leadingX: number): boolean {
     if (leadingX < this.obstacleFreeUntilX) {
       return false;
@@ -206,7 +284,7 @@ export class ObstacleManager {
     return leadingX - this.lastObstacleX >= minGap;
   }
 
-  private placeObstacle(x: number, variant: ObstacleVariant): void {
+  private placeObstacle(x: number, variant: ObstacleVariant): Phaser.Physics.Arcade.Image {
     const y = variant === 'overhead' ? this.groundY - OVERHEAD_CLEARANCE : this.groundY;
 
     const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
@@ -215,6 +293,7 @@ export class ObstacleManager {
     obstacle.setOrigin(0.5, 1);
     obstacle.setActive(true);
     obstacle.setVisible(true);
+    obstacle.clearTint(); // a pooled Image may carry a laser gate's tint from its previous spawn
     obstacle.setData('variant', variant);
     const body = obstacle.body as Phaser.Physics.Arcade.Body;
     body.enable = true;
@@ -237,9 +316,12 @@ export class ObstacleManager {
 
     this.obstacles.push(obstacle);
     this.totalSpawned += 1;
+    return obstacle;
   }
 
   update(): void {
+    this.updateLaserGates();
+
     const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
     while (this.obstacles.length && this.obstacles[0].x < despawnX) {
       const obstacle = this.obstacles.shift();

@@ -78,7 +78,7 @@ tasks started, to avoid an architecture change partway through:
       than jump-then-slide (see Notes)
 - [x] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
       rather than a real hole in `InfiniteGround`
-- [ ] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
+- [x] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
       activates
 - [ ] 38. Chasing hazard — a trailing obstacle that slowly closes in from behind, punishing
       lingering/slow play
@@ -362,3 +362,24 @@ tasks started, to avoid an architecture change partway through:
   rather than a literal hole in `InfiniteGround`). Verified live: forced spawn produced exactly 6
   ground-variant obstacles at the expected 55-unit spacing, `lastObstacleX` advanced to the trailing
   edge.
+
+- **Task 37's laser gate is a ground+overhead pair sharing one timer, not new geometry.** The two
+  pieces (positioned exactly as Tasks 33-34's already-verified `ground`/`overhead` variants) together
+  cover the player's *entire* reachable vertical range with no safe gap: standing/sliding hitbox
+  reaches up to ~102px, a jump's apex reaches ~150px, and the two pieces' hitboxes span 0-48px and
+  146-194px above ground - the unguarded band between them (48-146px, 98px tall) is narrower than
+  the ~102px standing/jumping hitbox, so no player position exists where the hitbox avoids both
+  pieces at once. That makes waiting for the "off" phase the *only* way through, not one jump/slide
+  option among several. Cycles off (1.5s, gray tint) -> warning (0.5s, yellow) -> on (1.5s, red,
+  lethal) -> back to off, reusing the same texture with only a tint change (no new art).
+  `CollisionManager`'s overlap callback now reads the obstacle argument it previously ignored,
+  skipping death when `variant === 'laser'` and `laserPhase !== 'on'` - overlapping a gate while it's
+  off/warning is the intended safe passage, not a near-miss. A pooled obstacle now has `clearTint()`
+  called on every reuse so a laser gate's tint can't leak onto a later plain obstacle drawn from the
+  same pool. Verified live: a real-time poll hit this environment's documented timer-throttling
+  quirk (`setInterval` ticks arriving far apart from their nominal spacing) and gave misleading
+  numbers, so verification instead forced `phaseEndTime` to already-expired and called
+  `updateLaserGates()` directly once per transition (the same deterministic approach used to verify
+  the ground-tunneling fix) - confirmed the exact off -> warning -> on -> off cycle, the exact tint
+  per phase, and that the `variant`/`laserPhase` combination read by `CollisionManager` only evaluates
+  to lethal during the "on" phase.
