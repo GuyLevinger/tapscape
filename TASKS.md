@@ -50,6 +50,25 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Notes / deviations from the original docs
 
+- **Fixed a fairness bug where two obstacles could spawn too close together to pass** (user
+  report: "sometimes there are 2 obstacles too close to one another, which makes it impossible to
+  pass"). Root causes, both in `ObstacleManager`: (1) the old `MIN_GAP` was a fixed 220 world-units
+  enforced only *within* a chunk's own obstacle placement - it said nothing about the gap between
+  the last obstacle of one chunk and the first of the next, which worked out to a fixed 200 units
+  (below even the old minimum) whenever a chunk ended with an obstacle at its far edge; (2) `MIN_GAP`
+  never accounted for `DifficultyManager` ramping scroll speed up to 1.5x over a run - a fixed
+  world-distance gap translates to steadily less *reaction time* as speed increases, so gaps that
+  were fine early in a run became too tight later on. Replaced the whole per-chunk gap formula with
+  a single check at the point every obstacle actually spawns: `MIN_REACTION_TIME_S` (1.1s, just
+  above the ~1.0s a full jump arc takes given `CharacterController`'s jump velocity/gravity) is
+  multiplied by the *current* scroll speed to get the live minimum world-gap, and any candidate
+  obstacle closer than that to `lastObstacleX` (tracked globally across chunk boundaries, not
+  per-chunk) is skipped rather than placed. This fixes both root causes with one mechanism and
+  applies to all 5 worlds automatically (`ObstacleManager` is shared engine code). Verified live: a
+  fresh run's pre-seeded obstacles all had gaps (400-600 units) safely above the live minimum
+  (~335 at base speed); a forced high-difficulty chunk spawned at a simulated ramped-up speed
+  (450) correctly thinned 3 candidate slots down to 1, keeping every surviving gap above the
+  correspondingly larger required minimum (495).
 - **Added a "Level Intro & Retry Flow" feature (post-MVP user request, not one of the 32 tasks or
   in any GDD chapter).** A run's first attempt at a world now gets an obstacle-free runway of
   ~2.5s (`FIRST_ATTEMPT_CLEAR_DISTANCE` in `src/config/gameplayConfig.ts`) so new players can feel
