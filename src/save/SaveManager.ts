@@ -3,6 +3,17 @@ export interface WorldSaveData {
   bestDistance: number;
 }
 
+// Lifetime stats, distinct from per-world bests and the spendable totalCoins balance (which goes
+// down when cosmetics/worlds are purchased) - achievements need numbers that only ever go up.
+export interface LifetimeStats {
+  totalRuns: number;
+  totalCoinsEarned: number;
+  bestScoreOverall: number;
+  bestDistanceOverall: number;
+  bestCoinsInRun: number;
+  bestSurvivalMs: number;
+}
+
 export interface SaveData {
   version: 1;
   totalCoins: number;
@@ -11,6 +22,7 @@ export interface SaveData {
   cosmeticsUnlocked: string[];
   cosmeticsEquipped: Record<string, string>;
   achievementsUnlocked: string[];
+  stats: LifetimeStats;
   settings: { musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -25,6 +37,14 @@ function defaultSaveData(): SaveData {
     cosmeticsUnlocked: [],
     cosmeticsEquipped: {},
     achievementsUnlocked: [],
+    stats: {
+      totalRuns: 0,
+      totalCoinsEarned: 0,
+      bestScoreOverall: 0,
+      bestDistanceOverall: 0,
+      bestCoinsInRun: 0,
+      bestSurvivalMs: 0,
+    },
     settings: { musicVolume: 1, sfxVolume: 1, muted: false },
   };
 }
@@ -61,8 +81,28 @@ class SaveManagerImpl {
     return this.data.worlds[worldKey] ?? { highScore: 0, bestDistance: 0 };
   }
 
+  hasPlayedWorld(worldKey: string): boolean {
+    return worldKey in this.data.worlds;
+  }
+
+  get worldsUnlockedIds(): string[] {
+    return [...this.data.worldsUnlocked];
+  }
+
   get totalCoins(): number {
     return this.data.totalCoins;
+  }
+
+  get stats(): LifetimeStats {
+    return { ...this.data.stats };
+  }
+
+  addCoins(amount: number): void {
+    if (amount <= 0) {
+      return;
+    }
+    this.data.totalCoins += amount;
+    this.persist();
   }
 
   get settings(): SaveData['settings'] {
@@ -104,6 +144,21 @@ class SaveManagerImpl {
     this.persist();
   }
 
+  get cosmeticsUnlockedIds(): string[] {
+    return [...this.data.cosmeticsUnlocked];
+  }
+
+  isAchievementUnlocked(id: string): boolean {
+    return this.data.achievementsUnlocked.includes(id);
+  }
+
+  unlockAchievement(id: string): void {
+    if (!this.data.achievementsUnlocked.includes(id)) {
+      this.data.achievementsUnlocked.push(id);
+      this.persist();
+    }
+  }
+
   spendCoins(amount: number): boolean {
     if (amount <= 0 || this.data.totalCoins < amount) {
       return false;
@@ -118,6 +173,7 @@ class SaveManagerImpl {
     score: number,
     distance: number,
     coinsEarned: number,
+    survivalMs: number,
   ): { highScore: number; isNewHighScore: boolean } {
     const current = this.getWorldStats(worldKey);
     const isNewHighScore = score > current.highScore;
@@ -127,6 +183,15 @@ class SaveManagerImpl {
       bestDistance: Math.max(current.bestDistance, distance),
     };
     this.data.totalCoins += coinsEarned;
+
+    const stats = this.data.stats;
+    stats.totalRuns += 1;
+    stats.totalCoinsEarned += coinsEarned;
+    stats.bestScoreOverall = Math.max(stats.bestScoreOverall, score);
+    stats.bestDistanceOverall = Math.max(stats.bestDistanceOverall, distance);
+    stats.bestCoinsInRun = Math.max(stats.bestCoinsInRun, coinsEarned);
+    stats.bestSurvivalMs = Math.max(stats.bestSurvivalMs, survivalMs);
+
     this.persist();
 
     return { highScore: this.data.worlds[worldKey].highScore, isNewHighScore };

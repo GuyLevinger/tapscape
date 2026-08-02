@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SaveManager } from '@/save/SaveManager';
+import { checkForNewAchievements } from '@/engine/AchievementManager';
 
 export interface ResultsData {
   worldKey: string;
@@ -7,6 +8,7 @@ export interface ResultsData {
   score: number;
   distance: number;
   coins: number;
+  survivalMs: number;
 }
 
 export class ResultsScene extends Phaser.Scene {
@@ -23,7 +25,9 @@ export class ResultsScene extends Phaser.Scene {
       data.score,
       data.distance,
       data.coins,
+      data.survivalMs,
     );
+    const newAchievements = checkForNewAchievements();
 
     this.add
       .text(width / 2, 100, 'Run Over', {
@@ -57,8 +61,26 @@ export class ResultsScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    let buttonY = height / 2 + 140;
+    if (newAchievements.length > 0) {
+      const achievementLines = [
+        'Achievement Unlocked!',
+        ...newAchievements.map((achievement) => achievement.name),
+      ];
+      this.add
+        .text(width / 2, height / 2 + 90, achievementLines.join('\n'), {
+          fontFamily: 'sans-serif',
+          fontSize: '16px',
+          color: '#facc15',
+          align: 'center',
+          lineSpacing: 6,
+        })
+        .setOrigin(0.5);
+      buttonY += 20 + achievementLines.length * 20;
+    }
+
     const retryButton = this.add
-      .text(width / 2, height / 2 + 140, 'Retry', {
+      .text(width / 2, buttonY, 'Retry', {
         fontFamily: 'sans-serif',
         fontSize: '24px',
         color: '#ffffff',
@@ -72,7 +94,7 @@ export class ResultsScene extends Phaser.Scene {
     });
 
     const homeButton = this.add
-      .text(width / 2, height / 2 + 200, 'Home', {
+      .text(width / 2, buttonY + 60, 'Home', {
         fontFamily: 'sans-serif',
         fontSize: '20px',
         color: '#ffffff',

@@ -34,6 +34,7 @@ export class WorldScene extends Phaser.Scene {
   private isRunOver = false;
   private worldKey = '';
   private worldName = '';
+  private survivalMs = 0;
 
   constructor() {
     super('World');
@@ -45,6 +46,7 @@ export class WorldScene extends Phaser.Scene {
     this.worldKey = world.key;
     this.worldName = world.name;
     this.isRunOver = false;
+    this.survivalMs = 0;
     const { width, height } = this.scale;
 
     this.cameras.main.setBackgroundColor(world.color);
@@ -116,6 +118,8 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    this.survivalMs += delta;
+
     this.difficultyManager?.update(delta);
     const scrollSpeed = this.difficultyManager?.scrollSpeed ?? SCROLL_SPEED;
     const difficultyBias = this.difficultyManager?.chunkDifficultyBias ?? 0;
@@ -161,6 +165,7 @@ export class WorldScene extends Phaser.Scene {
         score: this.scoreManager?.score ?? 0,
         distance: this.scoreManager?.distanceTraveled ?? 0,
         coins: this.coinManager?.stats.totalCollected ?? 0,
+        survivalMs: this.survivalMs,
       });
     });
   }

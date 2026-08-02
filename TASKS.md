@@ -39,7 +39,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 25. MeTube world — World
 - [x] 26. WrongTurn world — World
 - [x] 27. Cosmetics — Customization
-- [ ] 28. Achievements — Achievement system
+- [x] 28. Achievements — Achievement system
 - [ ] 29. World unlocks — Progression
 
 ## Milestone 4: Release (Tasks 30-32)
@@ -99,6 +99,22 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   `worldContent.ts` don't know about `SaveManager` either. Verified live: purchase deducts coins
   and unlocks+equips the item, insufficient-coin clicks show a toast without spending, and the
   equipped phone skin/wallpaper persist across a reload and render immediately on Home.
+
+- **Task 28's 18 achievements are evaluated statelessly against lifetime save stats, not against
+  run-completion events.** `SaveManager` gained a `stats` block (`totalRuns`, `totalCoinsEarned`,
+  `bestScoreOverall`, `bestDistanceOverall`, `bestCoinsInRun`, `bestSurvivalMs`) that only ever goes
+  up, updated by `recordRun` (now also takes a `survivalMs` arg tracked per-run in `WorldScene`).
+  `AchievementManager.checkForNewAchievements()` rescans every `AchievementDef` in
+  `src/data/achievements.ts` each time it's called (currently only after `ResultsScene` records a
+  run) and unlocks+rewards whichever are newly complete; this makes it trivially safe to call again
+  later from anywhere state changes (e.g. Task 29's world-purchase flow) without double-unlocking
+  or needing per-achievement event wiring. 8 of the 18 achievements each reward one of Task 27's 8
+  non-default cosmetics (a free path to every cosmetic, parallel to the coin-purchase path), the
+  rest reward coins. Verified live: completing a first run unlocks "First Run" + "Try Legbook" and
+  both display on the Results screen with their coin rewards added to the balance; a second run
+  shows no repeat popups; forcing lifetime stats to their thresholds and completing another run
+  unlocks three more achievements plus a cascaded "Fashionista" (own 3 cosmetics) in the same pass,
+  all correctly persisted across a reload.
 
 ## Known limitations to revisit during hardening (Task 30)
 
