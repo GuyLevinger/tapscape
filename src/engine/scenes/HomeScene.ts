@@ -4,11 +4,11 @@ import { getEquippedColor } from '@/data/cosmetics';
 import { SaveManager } from '@/save/SaveManager';
 import { EventBus, GameEvents } from '@/engine/EventBus';
 import { checkForNewAchievements } from '@/engine/AchievementManager';
+import { PhoneFrame } from '@/engine/PhoneFrame';
 
 const ICON_SIZE = 96;
 const COLUMNS = 3;
 const GRID_GAP = 32;
-const BEZEL_THICKNESS = 14;
 
 export class HomeScene extends Phaser.Scene {
   private toast?: Phaser.GameObjects.Text;
@@ -21,22 +21,11 @@ export class HomeScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(getEquippedColor('wallpaper'));
 
-    // Placeholder "phone skin": a colored case border, since no phone-chrome art exists yet.
-    this.add
-      .rectangle(width / 2, height / 2, width - BEZEL_THICKNESS, height - BEZEL_THICKNESS)
-      .setStrokeStyle(BEZEL_THICKNESS, getEquippedColor('phoneSkin'))
-      .setOrigin(0.5);
-
-    this.add
-      .text(width / 2, 48, '9:41', {
-        fontFamily: 'sans-serif',
-        fontSize: '24px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    const frame = new PhoneFrame(this);
+    const topRowY = frame.statusBarHeight + 8;
 
     const customizeButton = this.add
-      .text(width - 24, 24, 'Customize', {
+      .text(width - 24, topRowY, 'Customize', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#ffffff',
@@ -49,8 +38,10 @@ export class HomeScene extends Phaser.Scene {
       this.scene.start('Customize');
     });
 
+    // Shifted right of PhoneFrame's left-edge speaker/camera notch rather than flush against the
+    // left edge.
     this.add
-      .text(24, 24, `Coins: ${SaveManager.totalCoins}`, {
+      .text(frame.notchRightX + 16, topRowY, `Coins: ${SaveManager.totalCoins}`, {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#facc15',

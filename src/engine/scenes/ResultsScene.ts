@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SaveManager } from '@/save/SaveManager';
 import { checkForNewAchievements } from '@/engine/AchievementManager';
+import { PhoneFrame } from '@/engine/PhoneFrame';
 
 export interface ResultsData {
   worldKey: string;
@@ -19,6 +20,7 @@ export class ResultsScene extends Phaser.Scene {
   create(data: ResultsData): void {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#111318');
+    new PhoneFrame(this);
 
     const { highScore, isNewHighScore } = SaveManager.recordRun(
       data.worldKey,

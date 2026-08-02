@@ -6,6 +6,7 @@ import {
   isCosmeticAvailable,
   type CosmeticItem,
 } from '@/data/cosmetics';
+import { PhoneFrame } from '@/engine/PhoneFrame';
 
 const SWATCH_SIZE = 56;
 const SWATCH_GAP = 20;
@@ -23,8 +24,11 @@ export class CustomizeScene extends Phaser.Scene {
     const { width } = this.scale;
     this.cameras.main.setBackgroundColor('#111318');
 
+    const frame = new PhoneFrame(this);
+    const topRowY = frame.statusBarHeight + 8;
+
     this.add
-      .text(width / 2, 48, 'Customize', {
+      .text(width / 2, topRowY + 36, 'Customize', {
         fontFamily: 'sans-serif',
         fontSize: '28px',
         color: '#ffffff',
@@ -32,7 +36,7 @@ export class CustomizeScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.coinText = this.add
-      .text(width - 24, 24, '', {
+      .text(width - 24, topRowY, '', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#facc15',
@@ -40,8 +44,10 @@ export class CustomizeScene extends Phaser.Scene {
       .setOrigin(1, 0);
     this.refreshCoinText();
 
+    // Shifted right of PhoneFrame's left-edge speaker/camera notch rather than flush against the
+    // left edge.
     const backButton = this.add
-      .text(24, 24, '< Home', {
+      .text(frame.notchRightX + 16, topRowY, '< Home', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#ffffff',
@@ -51,7 +57,7 @@ export class CustomizeScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     backButton.on('pointerdown', () => this.scene.start('Home'));
 
-    let rowY = 130;
+    let rowY = topRowY + 106;
     CosmeticCategories.forEach(({ key, label }) => {
       this.add.text(32, rowY, label, {
         fontFamily: 'sans-serif',

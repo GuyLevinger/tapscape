@@ -116,6 +116,30 @@ tasks started, to avoid an architecture change partway through:
   `UIManager.setScore(12345)`/`setCoins(789)`/`setPowerup(9)` confirmed the fixed-slot layout holds
   with multi-digit values - no overlap with the icon cluster or into neighboring elements.
 
+- **Immediate user follow-up to Task 41: the phone framing extends to every scene, not just
+  in-run.** The user explicitly asked for the whole app - Boot, Home, World, Results, Customize -
+  to read as a phone, including hardware details (speaker, camera) beyond just the status bar.
+  Task 41's bar-building code (bezel border, time, decorative signal/wifi/battery) was extracted
+  from `UIManager` into a new shared `PhoneFrame` class (`src/engine/PhoneFrame.ts`) that every
+  scene now instantiates once; `UIManager` keeps only the score/coin readouts, anchored off
+  `PhoneFrame.statusBarContentRightX` instead of re-deriving the same cursor math. Per the user's
+  clarification, the speaker+camera cluster is drawn on the **left edge**, not top-center -
+  described as "the phone rotated 90 degrees," i.e. the hardware that's normally centered on a
+  portrait phone's top bezel now sits along the left edge instead, while the status bar itself
+  stays unrotated at the top. It's a dark rounded-rect "cutout" panel near the top-left corner
+  containing a vertical pill (the speaker grille) above a small ringed circle (the camera lens),
+  all hand-drawn with `Graphics` primitives, no new art. Every scene's previously flush-left
+  content (back buttons, Home's coin balance, Customize's back button) shifted right by
+  `PhoneFrame.notchRightX + 16` to clear it, and title-row content that sat right under the old
+  ad hoc bezel/clock (Customize's title and cosmetic rows) shifted down by the same amount the
+  header row itself moved. Verified live via `window.__game` screenshots of all four scenes
+  (Home, a paused World run, a directly-launched Results, and Customize): the bezel, status bar,
+  and left-edge notch render identically on each with no element overlapping the notch or the
+  bar, and equipping the paid "Crimson" phone skin via Customize's own swatch-click flow correctly
+  recolored the bezel on the very next scene launch - confirming `PhoneFrame`'s
+  `getEquippedColor('phoneSkin')` call (identical to the pre-refactor code, just relocated) still
+  threads cosmetics through correctly.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

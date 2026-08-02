@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ImageAssets, AudioAssets } from '@/config/assetManifest';
+import { PhoneFrame } from '@/engine/PhoneFrame';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -8,6 +9,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     const { width, height } = this.scale;
+    new PhoneFrame(this);
 
     const barWidth = 240;
     const barHeight = 16;
