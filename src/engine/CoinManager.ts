@@ -80,10 +80,11 @@ export class CoinManager {
     if (index === -1) {
       return;
     }
+    const { x, y } = coin;
     this.coins.splice(index, 1);
     this.recycle(coin);
     this.totalCollected += 1;
-    EventBus.emit(GameEvents.COIN_COLLECTED);
+    EventBus.emit(GameEvents.COIN_COLLECTED, { x, y });
   }
 
   update(): void {

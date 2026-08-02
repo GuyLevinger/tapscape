@@ -14,6 +14,7 @@ import { CoinManager } from '@/engine/CoinManager';
 import { PowerupManager } from '@/engine/PowerupManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { UIManager } from '@/engine/UIManager';
+import { FxManager } from '@/engine/FxManager';
 import { SCROLL_SPEED, FIRST_ATTEMPT_CLEAR_DISTANCE, RETRY_CLEAR_DISTANCE } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
@@ -103,6 +104,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.audioManager = new AudioManager(this);
     this.audioManager.playMusic('music_theme');
+    new FxManager(this);
 
     this.uiManager = new UIManager(
       this,

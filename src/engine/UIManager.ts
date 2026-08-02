@@ -1,12 +1,17 @@
 import Phaser from 'phaser';
 import { AudioManager } from './AudioManager';
+import { EventBus, GameEvents } from './EventBus';
 
 export class UIManager {
+  private scene: Phaser.Scene;
   private scoreText: Phaser.GameObjects.Text;
   private coinText: Phaser.GameObjects.Text;
   private powerupText: Phaser.GameObjects.Text;
   private muteButton: Phaser.GameObjects.Text;
   private powerupName: string;
+
+  private onCoinCollected = () => this.punch(this.coinText);
+  private onPowerupPicked = () => this.punch(this.powerupText);
 
   constructor(
     scene: Phaser.Scene,
@@ -15,6 +20,7 @@ export class UIManager {
     onBack: () => void,
     powerupName = 'Shield',
   ) {
+    this.scene = scene;
     this.powerupName = powerupName;
     const { width } = scene.scale;
 
@@ -86,6 +92,28 @@ export class UIManager {
     this.muteButton.on('pointerdown', () => {
       const muted = audioManager.toggleMute();
       this.muteButton.setText(muted ? 'Unmute' : 'Mute');
+    });
+
+    EventBus.on(GameEvents.COIN_COLLECTED, this.onCoinCollected);
+    EventBus.on(GameEvents.POWERUP_PICKED, this.onPowerupPicked);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      EventBus.off(GameEvents.COIN_COLLECTED, this.onCoinCollected);
+      EventBus.off(GameEvents.POWERUP_PICKED, this.onPowerupPicked);
+    });
+  }
+
+  // A quick scale punch on whichever HUD label just changed, so a pickup registers as a discrete
+  // event rather than just a number silently ticking up - setCoins/setPowerup are called every
+  // frame regardless of whether the value changed, so the punch is driven off the pickup events
+  // themselves rather than a value comparison inside those setters.
+  private punch(target: Phaser.GameObjects.Text): void {
+    this.scene.tweens.killTweensOf(target);
+    target.setScale(1.4);
+    this.scene.tweens.add({
+      targets: target,
+      scale: 1,
+      duration: 200,
+      ease: 'Back.easeOut',
     });
   }
 

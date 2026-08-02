@@ -45,7 +45,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 ## Milestone 4: Release (Tasks 30-32)
 
 - [x] 30. Performance pass — Optimization
-- [ ] 31. Polish — FX & animations
+- [x] 31. Polish — FX & animations
 - [ ] 32. Release — Production build
 
 ## Notes / deviations from the original docs
@@ -225,3 +225,27 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   the ground left `body.blocked.down`/`touching.down` both `true` and the body's bottom edge
   exactly at the ground's top edge (no penetration), where before the fix the same injection was
   the reported repro for tunneling through.
+
+- **Task 31's "FX & animations" is implemented entirely as procedural tweens/particles on the
+  existing placeholder textures, not new sprite-sheet animations.** The engine still has no
+  sprite-frame animation system (the same gap noted in Task 27, where "3 running animations, 3
+  victory animations" was cut rather than faked via tint recolors) - the GDD's "phone expresses
+  emotion through animation" and "deaths should feel humorous" goals are met instead with
+  transform-only juice: `CharacterController` now does a takeoff stretch on jump (scaleY 1.2),
+  a squash-and-recover on landing (scaleY 0.75 -> 1 via `Back.easeOut`, triggered off the
+  airborne-to-grounded transition rather than a fixed timer), and a toppling "flop" (angle to 80°,
+  pivoting from the sprite's ground-anchored origin) on death, timed to finish within the existing
+  500ms death->Results delay. None of this touches hitboxes (Task 30's shrink work) or the
+  `deltaMax` fix above - only `sprite.scale`/`sprite.angle`. A new `FxManager` mirrors
+  `AudioManager`'s pattern (reacts to existing `EventBus` events rather than being called directly)
+  to add camera shake + a full-screen red flash on `PLAYER_DIED`, and a particle burst (reusing the
+  `coin`/`powerup` textures as particle sprites, tinted per context - no new art) plus a floating
+  "+5" on `COIN_COLLECTED`/`POWERUP_PICKED`. `CoinManager`/`PowerupManager`'s collect() now emit
+  their event with `{x, y}` so `FxManager` knows where to place the burst. `UIManager` separately
+  listens for the same two pickup events to punch-scale whichever HUD counter just changed, rather
+  than diffing values inside `setScore`/`setCoins` (which run every frame regardless of change).
+  Verified live via Phaser's tween/camera APIs directly (not screenshots, which the project's own
+  verification notes already flag as unreliable for exact timing): jump/landing/death scale and
+  angle values sampled at precise tick offsets matched their tween targets and durations; shake,
+  flash, particle emitters and floating text all appeared immediately and fully cleaned themselves
+  up (destroyed/reset) within their configured lifetimes with no leftover objects.

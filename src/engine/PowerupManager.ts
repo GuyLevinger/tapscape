@@ -101,11 +101,12 @@ export class PowerupManager {
     if (index === -1) {
       return;
     }
+    const { x, y } = pickup;
     this.pickups.splice(index, 1);
     this.recycle(pickup);
     this.totalCollected += 1;
     this.effectRemainingMs = POWERUP_EFFECT_DURATION_MS;
-    EventBus.emit(GameEvents.POWERUP_PICKED);
+    EventBus.emit(GameEvents.POWERUP_PICKED, { x, y });
   }
 
   update(delta: number): void {

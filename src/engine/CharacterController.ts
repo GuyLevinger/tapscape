@@ -25,6 +25,7 @@ export class CharacterController {
   private normalBodyOffsetY = 0;
   private state: CharacterState = 'idle';
   private isDead = false;
+  private wasGrounded = true;
 
   constructor(scene: Phaser.Scene, x: number, y: number, groundHeight: number) {
     this.scene = scene;
@@ -74,6 +75,30 @@ export class CharacterController {
     }
     this.sprite.setVelocityY(JUMP_VELOCITY);
     this.setState('jump');
+
+    // A quick takeoff stretch - purely cosmetic (scale, not the hitbox) - gives the jump some
+    // "pop" per the GDD's "phone expresses emotion through animation" personality goal.
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.setScale(1, 1);
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: 0.85,
+      scaleY: 1.2,
+      duration: 120,
+      ease: 'Sine.easeOut',
+    });
+  }
+
+  private playLandingSquash(): void {
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.setScale(1, 0.75);
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 140,
+      ease: 'Back.easeOut',
+    });
   }
 
   private onSlide(): void {
@@ -122,6 +147,19 @@ export class CharacterController {
     this.setState('hit');
     this.sprite.setTint(0xff4444);
     this.sprite.setVelocityX(0);
+
+    // "Deaths should feel humorous rather than frustrating" per the GDD - a toppling flop reads
+    // as clumsy rather than punishing. Pivots from the feet (the sprite's origin), so it topples
+    // in place rather than sliding off its mark.
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.scene.tweens.add({
+      targets: this.sprite,
+      angle: 80,
+      scaleX: 1.1,
+      scaleY: 0.9,
+      duration: 300,
+      ease: 'Back.easeOut',
+    });
   }
 
   update(): void {
@@ -134,7 +172,12 @@ export class CharacterController {
     }
 
     if (!this.isSliding) {
-      this.setState(this.isGrounded() ? 'running' : 'jump');
+      const grounded = this.isGrounded();
+      if (grounded && !this.wasGrounded && this.state === 'jump') {
+        this.playLandingSquash();
+      }
+      this.setState(grounded ? 'running' : 'jump');
+      this.wasGrounded = grounded;
     }
   }
 
