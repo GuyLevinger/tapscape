@@ -70,8 +70,9 @@ tasks started, to avoid an architecture change partway through:
 - [x] 33. Spatial obstacle variants — low ground hurdle (jump required) vs. high suspended banner
       (jumping into it is the wrong move - just stay grounded/keep running, or delay a jump you'd
       otherwise take nearby)
-- [ ] 34. Tall barrier (requires a higher/well-timed jump) + wide multi-obstacle block (jump early
-      to clear the whole span)
+- [x] 34. "Tall barrier" (well-timed jump) + wide multi-obstacle block (jump early to clear the
+      whole span) - both built as multi-obstacle placement formations, not literally taller
+      obstacles (see Notes)
 - [ ] 35. Slalom combo pattern — high hazard immediately followed by a low one, forcing a fast
       jump-then-slide
 - [ ] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
@@ -312,3 +313,29 @@ tasks started, to avoid an architecture change partway through:
   physics bodies (not just the math): a standing/running player's body does not overlap an overhead
   obstacle, the same body moved up by a jump's apex offset (150px) does overlap it, and a standing
   player still overlaps a ground obstacle exactly as before (no regression).
+
+- **Task 34's "tall barrier" is not a literally taller obstacle - scaling one turned out to be
+  unsafe.** Tried scaling an obstacle's sprite taller (`setScale(1, 1.6)`) and recomputing its
+  hitbox from the scaled dimensions; tested three different ways to pass the scaled numbers into
+  `body.setSize`/`setOffset`, and all three produced a hitbox disconnected from the visual - in one
+  case the body ended up straddling the ground line, 16-45px below the sprite's own visual bottom
+  edge. Root cause: Arcade Bodies don't proportionally resize once `setSize()` has been called
+  manually (confirmed empirically - `body.width`/`height` stayed at the unscaled texture size after
+  `setScale`), so every manual attempt to compensate produced a different kind of wrong answer.
+  Given this project already shipped two rounds of "the hitbox doesn't match what I see" bug
+  reports, shipping a third, subtler version of the same class of bug wasn't worth it for one
+  hazard type. Both "tall barrier" and "wide block" are built instead from **placement** of the
+  exact same, already-correct single ground obstacle: `spawnTightPair` places two 70 world-units
+  apart (close enough that a jump timed for just the first one still lands on the second - the
+  "requires a well-timed jump" outcome, achieved without any new hitbox math), and `spawnWideBlock`
+  places three spaced 90 apart (a ~250-unit total span, wide enough to require an early, sustained
+  jump rather than a single-obstacle reaction). `ObstacleManager` gained a shared `placeObstacle(x,
+  variant)` used by the plain single-obstacle path and both new formations, and `canPlaceAt(x)`
+  which the formations check once against their *leading* obstacle only - the point of a formation
+  is that its internal spacing is intentionally tighter than the normal fairness gap, so only the
+  gap *before* and *after* the whole formation needs to respect `MIN_REACTION_TIME_S`. Verified
+  live: a forced pair landed at exactly 70 units apart and a forced block at exactly 90-unit
+  intervals, `lastObstacleX` correctly advanced to the formation's trailing edge (not its center or
+  first member), and a sampled obstacle from within a formation had the identical hitbox
+  top/bottom/width already verified for Task 33's plain ground obstacle - no distortion from being
+  part of a formation.

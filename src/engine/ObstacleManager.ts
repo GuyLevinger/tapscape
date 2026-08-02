@@ -33,6 +33,18 @@ const OVERHEAD_CLEARANCE = 130;
 // variants. A basic 50/50-ish mix for Task 33 - real per-difficulty tuning is Task 40's job.
 const OVERHEAD_VARIANT_CHANCE = 0.35;
 
+// "Tall barrier" and "wide block" (Task 34) can't be built by literally scaling an obstacle taller
+// - Arcade Bodies don't reliably track a scaled GameObject's size once setSize() has been called
+// manually (confirmed empirically: the resulting hitbox landed partly below the ground line,
+// disconnected from the taller visual). Both are built instead from placement: two/three of the
+// exact same, already-correct single obstacles spaced closer than a normal reaction gap allows, so
+// clearing the *group* takes one well-timed, early jump rather than reacting to each individually.
+const TIGHT_PAIR_CHANCE = 0.15;
+const TIGHT_PAIR_GAP = 70;
+const WIDE_BLOCK_CHANCE = 0.12;
+const WIDE_BLOCK_COUNT = 3;
+const WIDE_BLOCK_SPACING = 90;
+
 export type ObstacleVariant = 'ground' | 'overhead';
 
 export class ObstacleManager {
@@ -84,28 +96,71 @@ export class ObstacleManager {
       return;
     }
 
-    // Candidate slots come straight from chunk difficulty - spawnObstacle is what actually
-    // enforces the minimum gap (against the last obstacle spawned, whether it came from this
-    // chunk or the previous one), so crowded candidates are thinned out rather than placed.
+    // Candidate slots come straight from chunk difficulty - spawnObstacle/spawnTightPair/
+    // spawnWideBlock are what actually enforce the minimum gap (against the last obstacle spawned,
+    // whether it came from this chunk or the previous one), so crowded candidates are thinned out
+    // rather than placed.
     const count = chunkType.difficulty;
     for (let i = 0; i < count; i++) {
       const slot = count === 1 ? 0.5 : i / (count - 1);
       const x = chunkX + EDGE_MARGIN + slot * usableWidth;
-      this.spawnObstacle(x);
+      const roll = Math.random();
+      if (roll < WIDE_BLOCK_CHANCE) {
+        this.spawnWideBlock(x);
+      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE) {
+        this.spawnTightPair(x);
+      } else {
+        this.spawnObstacle(x);
+      }
     }
   }
 
   private spawnObstacle(x: number): void {
-    if (x < this.obstacleFreeUntilX) {
+    if (!this.canPlaceAt(x)) {
       return;
     }
-
-    const minGap = this.scrollSpeed * MIN_REACTION_TIME_S;
-    if (x - this.lastObstacleX < minGap) {
-      return;
-    }
-
     const variant: ObstacleVariant = Math.random() < OVERHEAD_VARIANT_CHANCE ? 'overhead' : 'ground';
+    this.placeObstacle(x, variant);
+    this.lastObstacleX = x;
+  }
+
+  // Two ground obstacles close enough together that reacting to only the first one still lands
+  // the player on top of the second - clearing the pair takes one deliberately early jump, i.e.
+  // the "requires a well-timed jump" tall-barrier-style hazard (see the constant comment above for
+  // why this isn't a literal taller obstacle).
+  private spawnTightPair(centerX: number): void {
+    const startX = centerX - TIGHT_PAIR_GAP / 2;
+    if (!this.canPlaceAt(startX)) {
+      return;
+    }
+    this.placeObstacle(startX, 'ground');
+    this.placeObstacle(startX + TIGHT_PAIR_GAP, 'ground');
+    this.lastObstacleX = startX + TIGHT_PAIR_GAP;
+  }
+
+  // Three ground obstacles spread wide enough that clearing the whole span takes an early jump
+  // sustained across all of them, rather than a jump timed for any single one - the "group 3-4
+  // obstacles side-by-side, jump early to clear the whole distance" hazard.
+  private spawnWideBlock(centerX: number): void {
+    const startX = centerX - ((WIDE_BLOCK_COUNT - 1) * WIDE_BLOCK_SPACING) / 2;
+    if (!this.canPlaceAt(startX)) {
+      return;
+    }
+    for (let i = 0; i < WIDE_BLOCK_COUNT; i++) {
+      this.placeObstacle(startX + i * WIDE_BLOCK_SPACING, 'ground');
+    }
+    this.lastObstacleX = startX + (WIDE_BLOCK_COUNT - 1) * WIDE_BLOCK_SPACING;
+  }
+
+  private canPlaceAt(leadingX: number): boolean {
+    if (leadingX < this.obstacleFreeUntilX) {
+      return false;
+    }
+    const minGap = this.scrollSpeed * MIN_REACTION_TIME_S;
+    return leadingX - this.lastObstacleX >= minGap;
+  }
+
+  private placeObstacle(x: number, variant: ObstacleVariant): void {
     const y = variant === 'overhead' ? this.groundY - OVERHEAD_CLEARANCE : this.groundY;
 
     const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
@@ -135,7 +190,6 @@ export class ObstacleManager {
     obstacle.setVelocityX(-this.scrollSpeed);
 
     this.obstacles.push(obstacle);
-    this.lastObstacleX = x;
     this.totalSpawned += 1;
   }
 
