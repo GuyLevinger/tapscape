@@ -15,6 +15,10 @@ const ROW_HEIGHT = 150;
 export class CustomizeScene extends Phaser.Scene {
   private coinText!: Phaser.GameObjects.Text;
   private toast?: Phaser.GameObjects.Text;
+  // The swatch grid's vertical extent overlaps PhoneFrame's left-edge notch (centered on the
+  // screen's vertical middle), unlike other scenes' left-aligned content - so it needs to start
+  // clear of the notch specifically, not just the bezel.
+  private rowStartX = 0;
 
   constructor() {
     super('Customize');
@@ -25,7 +29,7 @@ export class CustomizeScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#111318');
 
     const frame = new PhoneFrame(this);
-    const topRowY = frame.statusBarHeight + 8;
+    const topRowY = frame.statusBarBottomY + 8;
 
     this.add
       .text(width / 2, topRowY + 36, 'Customize', {
@@ -44,10 +48,8 @@ export class CustomizeScene extends Phaser.Scene {
       .setOrigin(1, 0);
     this.refreshCoinText();
 
-    // Shifted right of PhoneFrame's left-edge speaker/camera notch rather than flush against the
-    // left edge.
     const backButton = this.add
-      .text(frame.notchRightX + 16, topRowY, '< Home', {
+      .text(frame.contentLeftX, topRowY, '< Home', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#ffffff',
@@ -57,9 +59,10 @@ export class CustomizeScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     backButton.on('pointerdown', () => this.scene.start('Home'));
 
+    this.rowStartX = frame.notchRightX + 16;
     let rowY = topRowY + 106;
     CosmeticCategories.forEach(({ key, label }) => {
-      this.add.text(32, rowY, label, {
+      this.add.text(this.rowStartX, rowY, label, {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#9ca3af',
@@ -70,7 +73,7 @@ export class CustomizeScene extends Phaser.Scene {
   }
 
   private buildRow(items: CosmeticItem[], y: number): void {
-    let x = 32 + SWATCH_SIZE / 2;
+    let x = this.rowStartX + SWATCH_SIZE / 2;
     items.forEach((item) => {
       this.buildSwatch(item, x, y);
       x += SWATCH_SIZE + SWATCH_GAP;

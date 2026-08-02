@@ -140,6 +140,30 @@ tasks started, to avoid an architecture change partway through:
   `getEquippedColor('phoneSkin')` call (identical to the pre-refactor code, just relocated) still
   threads cosmetics through correctly.
 
+- **Second round of user refinements to the phone frame, all in `PhoneFrame.ts`.** (1) The clock
+  is now real local time (`Date.toLocaleTimeString` formatted without seconds, refreshed every 10s
+  via a scene timer cleaned up on `SHUTDOWN`) instead of the static "9:41" placeholder joke - the
+  user wanted an actually-live clock, not the Apple-keynote-screenshot gag. (2) The status bar is
+  now inset fully inside the bezel's inner edge (`x` from `BEZEL_THICKNESS` to
+  `width - BEZEL_THICKNESS`, `y` starting at `BEZEL_THICKNESS`) instead of spanning the full canvas
+  from `(0,0)` - previously it partially painted over/under the border stroke; every scene's "next
+  row" now anchors off a new `statusBarBottomY` property instead of `statusBarHeight + 8`, which
+  didn't account for the bezel offset. (3) The speaker pill is now dramatically taller (30px to
+  140px - "much longer" per the user) and, along with the camera dot beneath it, is centered on the
+  screen's full vertical middle rather than tucked near the top - both moved from a `notchY` fixed
+  near the status bar to `height / 2 - NOTCH_HEIGHT / 2`, and nudged an extra `NOTCH_LEFT_MARGIN`
+  (8px) clear of the bezel's inner edge ("slightly to the right" per the user, not flush against
+  the border). Moving the notch to mid-screen freed World/Home/Results' top-of-screen content from
+  needing to dodge it (their back/coin buttons reverted to simple `contentLeftX` padding), but
+  newly put it in the path of Customize's swatch grid, which - unlike World's transient scrolling
+  pickups - is static, left-anchored content that would otherwise permanently sit half-hidden
+  behind the notch; `PhoneFrame` kept a `notchRightX` property specifically for that case, and
+  `CustomizeScene`'s category labels and swatch rows now start there instead of `contentLeftX`.
+  Verified live: screenshots of Home/World/Customize all show the bar fully clear of the border,
+  the pill+dot centered vertically with no border overlap, and Customize's swatches no longer
+  obscured; two screenshots taken a minute apart during verification showed the clock advancing
+  ("9:16 PM" to "9:17 PM"), confirming it reads real time rather than a static string.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

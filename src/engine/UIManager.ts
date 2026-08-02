@@ -39,7 +39,7 @@ export class UIManager {
     this.powerupName = powerupName;
     const { width } = scene.scale;
     const frame = new PhoneFrame(scene);
-    const barY = frame.statusBarHeight / 2;
+    const barY = frame.statusBarCenterY;
     const chrome = scene.add.graphics().setScrollFactor(0);
 
     // Coin readout: a small filled circle (matches the coin pickup's yellow tint) plus a
@@ -97,7 +97,7 @@ export class UIManager {
       .setScrollFactor(0);
 
     this.powerupText = scene.add
-      .text(width - 24, frame.statusBarHeight + 8, '', {
+      .text(width - 24, frame.statusBarBottomY + 8, '', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#38bdf8',
@@ -108,11 +108,8 @@ export class UIManager {
       .setScrollFactor(0)
       .setVisible(false);
 
-    // Shifted right of the left-edge speaker/camera notch rather than stacking below the bar as
-    // before - the notch (see PhoneFrame) now occupies that x-range for a good chunk of height.
-    const leftContentX = frame.notchRightX + 16;
     const backButton = scene.add
-      .text(leftContentX, frame.statusBarHeight + 8, '< Home', {
+      .text(frame.contentLeftX, frame.statusBarBottomY + 8, '< Home', {
         fontFamily: 'sans-serif',
         fontSize: '20px',
         color: '#ffffff',
@@ -124,7 +121,7 @@ export class UIManager {
     backButton.on('pointerdown', onBack);
 
     this.muteButton = scene.add
-      .text(leftContentX, frame.statusBarHeight + 48, scene.sound.mute ? 'Unmute' : 'Mute', {
+      .text(frame.contentLeftX, frame.statusBarBottomY + 48, scene.sound.mute ? 'Unmute' : 'Mute', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#ffffff',

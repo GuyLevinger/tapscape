@@ -22,7 +22,7 @@ export class HomeScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(getEquippedColor('wallpaper'));
 
     const frame = new PhoneFrame(this);
-    const topRowY = frame.statusBarHeight + 8;
+    const topRowY = frame.statusBarBottomY + 8;
 
     const customizeButton = this.add
       .text(width - 24, topRowY, 'Customize', {
@@ -38,10 +38,8 @@ export class HomeScene extends Phaser.Scene {
       this.scene.start('Customize');
     });
 
-    // Shifted right of PhoneFrame's left-edge speaker/camera notch rather than flush against the
-    // left edge.
     this.add
-      .text(frame.notchRightX + 16, topRowY, `Coins: ${SaveManager.totalCoins}`, {
+      .text(frame.contentLeftX, topRowY, `Coins: ${SaveManager.totalCoins}`, {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#facc15',
