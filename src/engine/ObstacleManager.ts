@@ -54,6 +54,15 @@ const WIDE_BLOCK_SPACING = 90;
 const SLALOM_CHANCE = 0.12;
 const SLALOM_GAP = 160;
 
+// A wide, near-continuous run of ground obstacles standing in for a "gap in the track" - the user
+// agreed this shouldn't be a literal hole in InfiniteGround's seamless scrolling texture (a much
+// bigger, riskier change than one hazard type warrants). Reuses the same ground obstacle, just more
+// of them, closer together, spanning near the limit of a single jump's ~1.0s airtime at base scroll
+// speed - the widest, most committing of the ground formations.
+const GAP_CHANCE = 0.1;
+const GAP_COUNT = 6;
+const GAP_SPACING = 55;
+
 export type ObstacleVariant = 'ground' | 'overhead';
 
 export class ObstacleManager {
@@ -120,6 +129,8 @@ export class ObstacleManager {
         this.spawnTightPair(x);
       } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE) {
         this.spawnSlalom(x);
+      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE + GAP_CHANCE) {
+        this.spawnGap(x);
       } else {
         this.spawnObstacle(x);
       }
@@ -173,6 +184,18 @@ export class ObstacleManager {
     this.placeObstacle(startX, groundFirst ? 'ground' : 'overhead');
     this.placeObstacle(startX + SLALOM_GAP, groundFirst ? 'overhead' : 'ground');
     this.lastObstacleX = startX + SLALOM_GAP;
+  }
+
+  // Stands in for a "gap in the track" - see the constant comment above.
+  private spawnGap(centerX: number): void {
+    const startX = centerX - ((GAP_COUNT - 1) * GAP_SPACING) / 2;
+    if (!this.canPlaceAt(startX)) {
+      return;
+    }
+    for (let i = 0; i < GAP_COUNT; i++) {
+      this.placeObstacle(startX + i * GAP_SPACING, 'ground');
+    }
+    this.lastObstacleX = startX + (GAP_COUNT - 1) * GAP_SPACING;
   }
 
   private canPlaceAt(leadingX: number): boolean {

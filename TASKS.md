@@ -76,7 +76,7 @@ tasks started, to avoid an architecture change partway through:
 - [x] 35. Slalom combo pattern — ground obstacle (jump required) immediately followed by an
       overhead one (jump punished), or vice versa, forcing a jump-then-don't-jump decision rather
       than jump-then-slide (see Notes)
-- [ ] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
+- [x] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
       rather than a real hole in `InfiniteGround`
 - [ ] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
       activates
@@ -354,3 +354,11 @@ tasks started, to avoid an architecture change partway through:
   the first obstacle so the player is already past the overhead one's danger window by the time it
   arrives, rather than two independent, comfortably-spaced reactions. Verified live: forcing each
   order produced obstacles at exactly the expected x-positions and variants in both sequences.
+
+- **Task 36's "gap" reuses the same formation pattern as Tasks 34-35** (`spawnGap`, alongside
+  `spawnTightPair`/`spawnWideBlock`/`spawnSlalom`) - six ground obstacles 55 units apart, a ~275-unit
+  span placing it right at the edge of a jump's ~1.0s airtime at base scroll speed, the widest/most
+  committing of the ground formations (see the milestone-intro note for why this is a wide obstacle
+  rather than a literal hole in `InfiniteGround`). Verified live: forced spawn produced exactly 6
+  ground-variant obstacles at the expected 55-unit spacing, `lastObstacleX` advanced to the trailing
+  edge.
