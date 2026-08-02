@@ -80,8 +80,8 @@ tasks started, to avoid an architecture change partway through:
       rather than a real hole in `InfiniteGround`
 - [x] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
       activates
-- [ ] 38. Chasing hazard — a trailing obstacle that slowly closes in from behind, punishing
-      lingering/slow play
+- [x] 38. Chasing hazard — a trailing obstacle that closes in from behind on a timer (see Notes for
+      why "punishes lingering" doesn't map onto this game)
 - [ ] 39. Themed hazard re-skins + effects — Notification pop-up (solid barrier), Glitch Zone
       (temporary control invert), Low Battery Zone (temporary slow), WiFi Dead Zone (temporarily
       disables power-ups/score bonus)
@@ -383,3 +383,26 @@ tasks started, to avoid an architecture change partway through:
   the ground-tunneling fix) - confirmed the exact off -> warning -> on -> off cycle, the exact tint
   per phase, and that the `variant`/`laserPhase` combination read by `CollisionManager` only evaluates
   to lethal during the "on" phase.
+
+- **Task 38's "chasing hazard" cannot literally punish lingering, because the player has no
+  lingering to punish.** The request's own framing - "keeps pressure on the player so they don't
+  linger in one spot" - assumes some player-controlled pacing (common in platformers where you can
+  stop or move slower). This game has none: the player's x never changes, forward progress is
+  automatic, and every hazard already scrolls toward the player at the same `scrollSpeed` -
+  there's no such thing as falling behind. What's actually buildable, and still delivers the
+  requested *feeling* (a visible, looming threat that keeps pressure on), is a hazard that spawns
+  off-screen behind the player (`playerX - 600`) on an independent ~20-30s timer and closes the gap
+  by moving *rightward* (`velocityX = +250`, toward the player) over a few seconds, then behaves
+  exactly like a normal ground obstacle once it arrives - same jump-required hitbox, same lethality.
+  Needed two small carve-outs from the shared machinery built for every other hazard: `setScrollSpeed`
+  now skips any obstacle tagged `variant === 'chaser'` (the shared `-scrollSpeed` assignment would
+  otherwise stomp its rightward velocity every frame), and it isn't subject to `canPlaceAt`/
+  `lastObstacleX` at all, since those govern spacing between hazards placed ahead from chunk content
+  - irrelevant to a hazard spawned behind the player on its own clock. Once it passes the player
+  (`x >= playerX + 100`) it's recycled immediately via a new shared `recycleObstacle` helper (factored
+  out of the despawn sweep, which only ever looks *behind* the camera and would never catch something
+  still drifting rightward). Verified live: forced spawn landed at exactly `playerX - 600` with
+  `velocityX = 250`; deterministic pass-margin checks confirmed it stays tracked mid-range and gets
+  recycled (removed from both the chaser list and the collidable `obstacles` array) once past; and a
+  real, unforced playthrough (no invincibility) showed the chaser closing from spawn to a genuine
+  collision death in ~2.2s, matching the ~2.4s estimate (600 units / 250 units-per-second).

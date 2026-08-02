@@ -88,6 +88,20 @@ interface LaserGate {
   phaseEndTime: number;
 }
 
+// A hazard that approaches from *behind* the player rather than ahead. The literal request
+// ("punishes lingering/slow play") doesn't map onto this game - the player never controls their
+// own forward speed, everything moves at the same scrollSpeed, so there's no such thing as
+// "lingering" to punish. What's buildable and still delivers the intended feeling (a visible,
+// looming threat that keeps pressure on) is a hazard that spawns off-screen behind the player and
+// closes the gap over a few seconds, then requires the same jump/duck response as any other
+// obstacle once it arrives. It moves rightward (toward the player) while closing in, which is why
+// it needs its own velocity handling instead of the shared -scrollSpeed every other obstacle gets.
+const CHASE_MIN_INTERVAL_MS = 20_000;
+const CHASE_MAX_INTERVAL_MS = 30_000;
+const CHASE_START_DISTANCE = 600;
+const CHASE_APPROACH_SPEED = 250;
+const CHASE_PASS_MARGIN = 100;
+
 export type ObstacleVariant = 'ground' | 'overhead';
 
 export class ObstacleManager {
@@ -102,6 +116,9 @@ export class ObstacleManager {
   // Arcade Body instead of paying allocation/GC cost every ~1-2s a chunk recycles.
   private pool: Phaser.Physics.Arcade.Image[] = [];
   private laserGates: LaserGate[] = [];
+  private chasers: Phaser.Physics.Arcade.Image[] = [];
+  private msUntilNextChase: number;
+  private playerX: number;
   private totalSpawned = 0;
   private totalRecycled = 0;
 
@@ -111,12 +128,19 @@ export class ObstacleManager {
     scrollSpeed: number,
     textureKey = 'obstacle',
     obstacleFreeUntilX = 0,
+    playerX = 0,
   ) {
     this.scene = scene;
     this.groundY = groundY;
     this.scrollSpeed = scrollSpeed;
     this.textureKey = textureKey;
     this.obstacleFreeUntilX = obstacleFreeUntilX;
+    this.playerX = playerX;
+    this.msUntilNextChase = this.randomChaseInterval();
+  }
+
+  private randomChaseInterval(): number {
+    return CHASE_MIN_INTERVAL_MS + Math.random() * (CHASE_MAX_INTERVAL_MS - CHASE_MIN_INTERVAL_MS);
   }
 
   get stats(): { active: number; totalSpawned: number; totalRecycled: number } {
@@ -130,6 +154,11 @@ export class ObstacleManager {
   setScrollSpeed(speed: number): void {
     this.scrollSpeed = speed;
     for (const obstacle of this.obstacles) {
+      // Chasers manage their own (rightward, closing-in) velocity in updateChasers - the shared
+      // leftward scrollSpeed would immediately overwrite it every frame otherwise.
+      if (obstacle.getData('variant') === 'chaser') {
+        continue;
+      }
       obstacle.setVelocityX(-speed);
     }
   }
@@ -276,6 +305,50 @@ export class ObstacleManager {
     }
   }
 
+  // Spawns off-screen behind the player on an independent timer - see the constant comment above.
+  // Not subject to canPlaceAt/lastObstacleX at all: those govern spacing between hazards placed
+  // ahead of the player from chunk content, which has nothing to do with this hazard's approach
+  // from behind on its own schedule.
+  private spawnChaser(): void {
+    const chaser = this.placeObstacle(this.playerX - CHASE_START_DISTANCE, 'ground');
+    chaser.setData('variant', 'chaser');
+    chaser.setVelocityX(CHASE_APPROACH_SPEED);
+    this.chasers.push(chaser);
+  }
+
+  private updateChasers(delta: number): void {
+    this.msUntilNextChase -= delta;
+    if (this.msUntilNextChase <= 0) {
+      this.spawnChaser();
+      this.msUntilNextChase = this.randomChaseInterval();
+    }
+
+    for (let i = this.chasers.length - 1; i >= 0; i--) {
+      const chaser = this.chasers[i];
+      if (!chaser.active || chaser.x < this.playerX + CHASE_PASS_MARGIN) {
+        continue;
+      }
+      // Caught up to (and passed) the player - its one moment of danger has already been resolved
+      // by the normal overlap check, so recycle it now rather than letting it drift rightward
+      // forever (the despawn sweep below only ever looks to the left).
+      this.chasers.splice(i, 1);
+      const index = this.obstacles.indexOf(chaser);
+      if (index !== -1) {
+        this.obstacles.splice(index, 1);
+      }
+      this.recycleObstacle(chaser);
+      this.totalRecycled += 1;
+    }
+  }
+
+  private recycleObstacle(obstacle: Phaser.Physics.Arcade.Image): void {
+    obstacle.setActive(false);
+    obstacle.setVisible(false);
+    obstacle.setVelocity(0, 0);
+    (obstacle.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.pool.push(obstacle);
+  }
+
   private canPlaceAt(leadingX: number): boolean {
     if (leadingX < this.obstacleFreeUntilX) {
       return false;
@@ -319,18 +392,15 @@ export class ObstacleManager {
     return obstacle;
   }
 
-  update(): void {
+  update(delta: number): void {
     this.updateLaserGates();
+    this.updateChasers(delta);
 
     const despawnX = this.scene.cameras.main.scrollX - DESPAWN_MARGIN;
     while (this.obstacles.length && this.obstacles[0].x < despawnX) {
       const obstacle = this.obstacles.shift();
       if (obstacle) {
-        obstacle.setActive(false);
-        obstacle.setVisible(false);
-        obstacle.setVelocity(0, 0);
-        (obstacle.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.pool.push(obstacle);
+        this.recycleObstacle(obstacle);
       }
       this.totalRecycled += 1;
     }

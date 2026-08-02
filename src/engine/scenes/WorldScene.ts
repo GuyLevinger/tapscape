@@ -74,6 +74,7 @@ export class WorldScene extends Phaser.Scene {
       SCROLL_SPEED,
       content.obstacleTextureKey,
       obstacleFreeUntilX,
+      playerX,
     );
     this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.coinTextureKey);
     this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.powerupTextureKey);
@@ -145,7 +146,7 @@ export class WorldScene extends Phaser.Scene {
     this.chunkManager?.setDifficultyBias(difficultyBias);
     this.chunkManager?.update(delta);
     this.obstacleManager?.setScrollSpeed(scrollSpeed);
-    this.obstacleManager?.update();
+    this.obstacleManager?.update(delta);
     this.coinManager?.setScrollSpeed(scrollSpeed);
     this.coinManager?.update();
     this.powerupManager?.setScrollSpeed(scrollSpeed);
