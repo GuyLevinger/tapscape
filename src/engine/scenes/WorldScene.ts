@@ -12,9 +12,11 @@ import { ScoreManager } from '@/engine/ScoreManager';
 import { DifficultyManager } from '@/engine/DifficultyManager';
 import { CoinManager } from '@/engine/CoinManager';
 import { PowerupManager } from '@/engine/PowerupManager';
+import { DebuffZoneManager } from '@/engine/DebuffZoneManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { UIManager } from '@/engine/UIManager';
 import { FxManager } from '@/engine/FxManager';
+import { EventBus, GameEvents } from '@/engine/EventBus';
 import { SCROLL_SPEED, FIRST_ATTEMPT_CLEAR_DISTANCE, RETRY_CLEAR_DISTANCE } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
@@ -27,6 +29,7 @@ export class WorldScene extends Phaser.Scene {
   private obstacleManager?: ObstacleManager;
   private coinManager?: CoinManager;
   private powerupManager?: PowerupManager;
+  private debuffZoneManager?: DebuffZoneManager;
   private scoreManager?: ScoreManager;
   private difficultyManager?: DifficultyManager;
   private audioManager?: AudioManager;
@@ -78,10 +81,12 @@ export class WorldScene extends Phaser.Scene {
     );
     this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.coinTextureKey);
     this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.powerupTextureKey);
+    this.debuffZoneManager = new DebuffZoneManager(this, height - GROUND_HEIGHT, SCROLL_SPEED);
     this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT, (x, chunkWidth, chunkType) => {
       this.obstacleManager?.spawnForChunk(x, chunkWidth, chunkType);
       this.coinManager?.spawnForChunk(x, chunkWidth, chunkType);
       this.powerupManager?.spawnForChunk(x, chunkWidth, chunkType);
+      this.debuffZoneManager?.spawnForChunk(x, chunkWidth, chunkType);
     });
 
     new CollisionManager(
@@ -99,6 +104,29 @@ export class WorldScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.character.gameObject, this.powerupManager.group, (_player, powerupObj) => {
       this.powerupManager?.collect(powerupObj as Phaser.Physics.Arcade.Image);
+    });
+
+    this.physics.add.overlap(this.character.gameObject, this.debuffZoneManager.group, (_player, zoneObj) => {
+      this.debuffZoneManager?.collect(zoneObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Task 39's Low Battery / WiFi Dead zones affect managers (DifficultyManager, PowerupManager)
+    // that don't otherwise know about EventBus/debuffs - WorldScene mediates since it already holds
+    // references to both. Glitch Zone's control-inversion is handled entirely inside InputManager
+    // instead, since it already owns translating raw input into PLAYER_JUMPED/PLAYER_SLID.
+    const onBatteryLowStarted = () => this.difficultyManager?.setSlowed(true);
+    const onBatteryLowEnded = () => this.difficultyManager?.setSlowed(false);
+    const onWifiDeadStarted = () => this.powerupManager?.setDisabled(true);
+    const onWifiDeadEnded = () => this.powerupManager?.setDisabled(false);
+    EventBus.on(GameEvents.BATTERY_LOW_STARTED, onBatteryLowStarted);
+    EventBus.on(GameEvents.BATTERY_LOW_ENDED, onBatteryLowEnded);
+    EventBus.on(GameEvents.WIFI_DEAD_STARTED, onWifiDeadStarted);
+    EventBus.on(GameEvents.WIFI_DEAD_ENDED, onWifiDeadEnded);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      EventBus.off(GameEvents.BATTERY_LOW_STARTED, onBatteryLowStarted);
+      EventBus.off(GameEvents.BATTERY_LOW_ENDED, onBatteryLowEnded);
+      EventBus.off(GameEvents.WIFI_DEAD_STARTED, onWifiDeadStarted);
+      EventBus.off(GameEvents.WIFI_DEAD_ENDED, onWifiDeadEnded);
     });
 
     new InputManager(this);
@@ -151,6 +179,8 @@ export class WorldScene extends Phaser.Scene {
     this.coinManager?.update();
     this.powerupManager?.setScrollSpeed(scrollSpeed);
     this.powerupManager?.update(delta);
+    this.debuffZoneManager?.setScrollSpeed(scrollSpeed);
+    this.debuffZoneManager?.update(delta);
     this.character?.setInvincible(this.powerupManager?.isEffectActive ?? false);
     this.signatureMechanic?.update(delta);
 
@@ -171,6 +201,7 @@ export class WorldScene extends Phaser.Scene {
     this.obstacleManager?.freeze();
     this.coinManager?.freeze();
     this.powerupManager?.freeze();
+    this.debuffZoneManager?.freeze();
 
     // Brief pause so the player registers the hit before the scene switches,
     // per the GDD's "deaths should feel humorous rather than frustrating" guidance.

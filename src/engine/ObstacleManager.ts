@@ -33,6 +33,11 @@ const OVERHEAD_CLEARANCE = 130;
 // variants. A basic 50/50-ish mix for Task 33 - real per-difficulty tuning is Task 40's job.
 const OVERHEAD_VARIANT_CHANCE = 0.35;
 
+// Task 39's purely-cosmetic "Notification Pop-Up" re-skin for plain single obstacles - same
+// texture dimensions (48x64) as the generic obstacle art, so it drops into the existing
+// placement/hitbox code with no other changes.
+const NOTIFICATION_SKIN_CHANCE = 0.2;
+
 // "Tall barrier" and "wide block" (Task 34) can't be built by literally scaling an obstacle taller
 // - Arcade Bodies don't reliably track a scaled GameObject's size once setSize() has been called
 // manually (confirmed empirically: the resulting hitbox landed partly below the ground line,
@@ -199,7 +204,12 @@ export class ObstacleManager {
       return;
     }
     const variant: ObstacleVariant = Math.random() < OVERHEAD_VARIANT_CHANCE ? 'overhead' : 'ground';
-    this.placeObstacle(x, variant);
+    // Task 39's "Notification Pop-Up" re-skin - purely cosmetic (a generic texture swap), same
+    // ground/overhead placement and hitbox as any other single obstacle. Only applied to plain
+    // single spawns, not the formations above - re-skinning a whole tight-pair/block/gap run would
+    // read as a different, more confusing hazard than intended.
+    const texture = Math.random() < NOTIFICATION_SKIN_CHANCE ? 'notification' : undefined;
+    this.placeObstacle(x, variant, texture);
     this.lastObstacleX = x;
   }
 
@@ -357,12 +367,12 @@ export class ObstacleManager {
     return leadingX - this.lastObstacleX >= minGap;
   }
 
-  private placeObstacle(x: number, variant: ObstacleVariant): Phaser.Physics.Arcade.Image {
+  private placeObstacle(x: number, variant: ObstacleVariant, textureOverride?: string): Phaser.Physics.Arcade.Image {
     const y = variant === 'overhead' ? this.groundY - OVERHEAD_CLEARANCE : this.groundY;
 
     const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
     obstacle.setPosition(x, y);
-    obstacle.setTexture(this.textureKey);
+    obstacle.setTexture(textureOverride ?? this.textureKey);
     obstacle.setOrigin(0.5, 1);
     obstacle.setActive(true);
     obstacle.setVisible(true);

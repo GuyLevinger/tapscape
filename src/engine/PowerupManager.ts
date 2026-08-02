@@ -28,6 +28,12 @@ export class PowerupManager {
   private effectRemainingMs = 0;
   private totalSpawned = 0;
   private totalCollected = 0;
+  // Task 39's "WiFi Dead Zone" - "temporarily disables special abilities." WorldScene toggles this
+  // in response to DebuffZoneManager's WIFI_DEAD_STARTED/ENDED events; a pickup collected while
+  // disabled still visually disappears and counts toward totalCollected (it doesn't just fail to
+  // spawn), it just doesn't grant its effect - matching "your power-up still got used, it just
+  // didn't work," not "the game silently ignored your input."
+  private disabled = false;
 
   constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number, textureKey = 'powerup') {
     this.scene = scene;
@@ -105,8 +111,17 @@ export class PowerupManager {
     this.pickups.splice(index, 1);
     this.recycle(pickup);
     this.totalCollected += 1;
-    this.effectRemainingMs = POWERUP_EFFECT_DURATION_MS;
+    if (!this.disabled) {
+      this.effectRemainingMs = POWERUP_EFFECT_DURATION_MS;
+    }
     EventBus.emit(GameEvents.POWERUP_PICKED, { x, y });
+  }
+
+  setDisabled(disabled: boolean): void {
+    this.disabled = disabled;
+    if (disabled) {
+      this.effectRemainingMs = 0;
+    }
   }
 
   update(delta: number): void {

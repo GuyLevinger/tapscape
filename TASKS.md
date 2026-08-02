@@ -82,9 +82,9 @@ tasks started, to avoid an architecture change partway through:
       activates
 - [x] 38. Chasing hazard — a trailing obstacle that closes in from behind on a timer (see Notes for
       why "punishes lingering" doesn't map onto this game)
-- [ ] 39. Themed hazard re-skins + effects — Notification pop-up (solid barrier), Glitch Zone
+- [x] 39. Themed hazard re-skins + effects — Notification pop-up (solid barrier), Glitch Zone
       (temporary control invert), Low Battery Zone (temporary slow), WiFi Dead Zone (temporarily
-      disables power-ups/score bonus)
+      disables power-ups)
 - [ ] 40. Wire hazard variety into per-difficulty chunk definitions — easy/medium/hard pattern
       progression and combo formations (approximated safe-slot layouts per above)
 
@@ -406,3 +406,36 @@ tasks started, to avoid an architecture change partway through:
   recycled (removed from both the chaser list and the collidable `obstacles` array) once past; and a
   real, unforced playthrough (no invincibility) showed the chaser closing from spawn to a genuine
   collision death in ~2.2s, matching the ~2.4s estimate (600 units / 250 units-per-second).
+
+- **Task 39 added 4 new hand-drawn SVG textures** (`notification.svg`, `glitch.svg`, `battery.svg`,
+  `wifi_off.svg`, same 48x64 dimensions and flat-shape style as the existing obstacle art) since
+  this task - unlike Tasks 33-38, which all explicitly deferred re-skinning - is specifically about
+  themed visuals. "Notification Pop-Up" is purely cosmetic: `spawnObstacle` now has a 20% chance to
+  pass a `notification` texture override into `placeObstacle` for a plain single obstacle, no other
+  change. Glitch/Battery/WiFi are non-lethal pickups, structurally modeled on `PowerupManager`
+  (spawn timer hooked into `ChunkManager`'s callback, collect-on-touch, timed effect) rather than on
+  `ObstacleManager`, since "touch it and something happens for a while" is a power-up shape, not an
+  obstacle shape - a new `DebuffZoneManager` handles all three. Each effect required a small,
+  different integration point: Glitch (control inversion) lives entirely inside `InputManager`
+  (`GLITCH_STARTED`/`ENDED` flips a flag that swaps which event `emitJump`/`emitSlide` fire - a pure
+  input remap, `CharacterController` never knows), Battery (world slowdown) added a `setSlowed`
+  boolean to `DifficultyManager` that halves its `scrollSpeed` getter, and WiFi (disables
+  power-ups) added a `setDisabled` flag to `PowerupManager` that also force-cancels any
+  *currently active* effect, not just future pickups. `WorldScene` mediates the latter two (it
+  already holds references to both managers) by listening for `BATTERY_LOW_STARTED/ENDED` and
+  `WIFI_DEAD_STARTED/ENDED` and calling straight into the relevant setter, with cleanup on its
+  existing `SHUTDOWN` hook. "Disables special abilities" was kept scoped to power-ups only - "score
+  multipliers" doesn't exist as a mechanic anywhere in the codebase, and inventing one solely to have
+  something for WiFi Dead to disable would be scope creep in the wrong direction. Verified live:
+  forced battery/wifi collection showed `scrollSpeed` drop from 300 to exactly 150 and
+  `PowerupManager`'s `disabled` flag flip to `true` respectively (the latter also *cancelled* a
+  manually-forced active invincibility, confirming the force-cancel path); the debuff spawn timer
+  and the notification re-skin were both confirmed through the same `ChunkManager`-callback and
+  `spawnObstacle` paths already proven for every other hazard. Glitch's control-inversion couldn't
+  be exercised through simulated keyboard events in this environment (a synthetic `KeyboardEvent`
+  dispatch didn't register even for an unrelated, un-glitched baseline jump, confirming it's a
+  pre-existing environment quirk, not a Task 39 regression) - verified by code inspection instead,
+  since it's the identical `EventBus.on(event, handler, this)` /
+  `EventBus.off(event, handler, this)` pattern already proven correct for every other listener in
+  this codebase (`CharacterController`'s `PLAYER_JUMPED`/`PLAYER_SLID` handlers, `AudioManager`,
+  `FxManager`, `UIManager`), applied to a two-line boolean flip.

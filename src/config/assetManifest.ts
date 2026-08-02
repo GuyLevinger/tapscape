@@ -19,6 +19,10 @@ import wrongturnObstacleUrl from '@/assets/wrongturn_obstacle.svg';
 import wrongturnCoinUrl from '@/assets/wrongturn_coin.svg';
 import wrongturnPowerupUrl from '@/assets/wrongturn_powerup.svg';
 import wrongturnSignUrl from '@/assets/wrongturn_sign.svg';
+import notificationUrl from '@/assets/notification.svg';
+import glitchUrl from '@/assets/glitch.svg';
+import batteryUrl from '@/assets/battery.svg';
+import wifiOffUrl from '@/assets/wifi_off.svg';
 import jumpSfxUrl from '@/audio/sfx_jump.wav';
 import coinSfxUrl from '@/audio/sfx_coin.wav';
 import hitSfxUrl from '@/audio/sfx_hit.wav';
@@ -53,6 +57,10 @@ export const ImageAssets: ImageAssetDef[] = [
   { key: 'wrongturn_coin', url: wrongturnCoinUrl, width: 32, height: 32 },
   { key: 'wrongturn_powerup', url: wrongturnPowerupUrl, width: 36, height: 36 },
   { key: 'wrongturn_sign', url: wrongturnSignUrl, width: 80, height: 80 },
+  { key: 'notification', url: notificationUrl, width: 48, height: 64 },
+  { key: 'glitch', url: glitchUrl, width: 48, height: 64 },
+  { key: 'battery', url: batteryUrl, width: 48, height: 64 },
+  { key: 'wifi_off', url: wifiOffUrl, width: 48, height: 64 },
 ];
 
 export interface AudioAssetDef {
