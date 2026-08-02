@@ -234,6 +234,18 @@ tasks started, to avoid an architecture change partway through:
   and a visible shadow, the enlarged/repositioned home button on World's right edge, and the gear
   icon rendering as a clearly legible cog rather than a scalloped chip.
 
+- **Sixth round of user refinements: Customize's content horizontally centered instead of
+  left-aligned.** Category labels and swatch rows previously started flush against
+  `notchRightX` (clearing the left-edge notch, per the earlier overlap fix) and ran rightward from
+  there, reading as left-aligned against an otherwise-centered "Customize" title above them.
+  `PhoneFrame` gained a `screenRightX` property (the screen's right inner edge, mirroring the
+  existing `notchRightX`/`contentLeftX`) so `CustomizeScene` can compute a `centerX` -
+  `(notchRightX + screenRightX) / 2` - and center both the category label (`setOrigin(0.5, 0)`)
+  and the swatch row (built outward from `centerX - totalWidth / 2`, where `totalWidth` is derived
+  from the actual item count rather than assuming 5) on it. Verified live: a screenshot shows both
+  "Phone Skin" and "Wallpaper" rows and their labels centered in the usable screen width, clear of
+  the notch on the left and symmetric against the home button's margin on the right.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

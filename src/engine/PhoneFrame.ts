@@ -69,6 +69,10 @@ export class PhoneFrame {
   // spans the screen's vertical middle (e.g. Customize's swatch grid) should start there instead
   // of at `contentLeftX`, since the notch itself sits in that band and would otherwise overlap it.
   readonly notchRightX: number;
+  // Right inner edge of the screen (before the bezel) - callers centering content within the
+  // usable width (e.g. Customize's swatch rows, which must also clear the notch on the left) use
+  // this as the right bound.
+  readonly screenRightX: number;
 
   // `showCoins`: whether PhoneFrame draws the wallet coin balance into the bar itself. Defaults
   // to true (Home/Results/Customize/Boot all want it there instead of a separate box). WorldScene
@@ -101,6 +105,7 @@ export class PhoneFrame {
     this.statusBarBottomY = screenY0 + STATUS_BAR_HEIGHT;
     this.contentLeftX = screenX0 + 10;
     this.notchRightX = screenX0 + NOTCH_LEFT_MARGIN + NOTCH_WIDTH;
+    this.screenRightX = screenX1;
 
     // A soft drop shadow (a slightly larger, faint rounded rect offset down-right) sits behind the
     // body outline to lift it off the background, then the body itself - both just strokes, so

@@ -14,10 +14,6 @@ const ROW_HEIGHT = 150;
 
 export class CustomizeScene extends Phaser.Scene {
   private toast?: Phaser.GameObjects.Text;
-  // The swatch grid's vertical extent overlaps PhoneFrame's left-edge notch (centered on the
-  // screen's vertical middle), unlike other scenes' left-aligned content - so it needs to start
-  // clear of the notch specifically, not just the bezel.
-  private rowStartX = 0;
 
   constructor() {
     super('Customize');
@@ -38,21 +34,26 @@ export class CustomizeScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.rowStartX = frame.notchRightX + 16;
+    // Centered within the usable width (clear of the notch on the left) rather than flush-left
+    // against it, so labels and swatch rows both sit centered on the screen like the title above.
+    const centerX = (frame.notchRightX + frame.screenRightX) / 2;
     let rowY = topRowY + 106;
     CosmeticCategories.forEach(({ key, label }) => {
-      this.add.text(this.rowStartX, rowY, label, {
-        fontFamily: 'sans-serif',
-        fontSize: '18px',
-        color: '#9ca3af',
-      });
-      this.buildRow(getCosmeticsByCategory(key), rowY + 60);
+      this.add
+        .text(centerX, rowY, label, {
+          fontFamily: 'sans-serif',
+          fontSize: '18px',
+          color: '#9ca3af',
+        })
+        .setOrigin(0.5, 0);
+      this.buildRow(getCosmeticsByCategory(key), rowY + 60, centerX);
       rowY += ROW_HEIGHT;
     });
   }
 
-  private buildRow(items: CosmeticItem[], y: number): void {
-    let x = this.rowStartX + SWATCH_SIZE / 2;
+  private buildRow(items: CosmeticItem[], y: number, centerX: number): void {
+    const totalWidth = items.length * SWATCH_SIZE + (items.length - 1) * SWATCH_GAP;
+    let x = centerX - totalWidth / 2 + SWATCH_SIZE / 2;
     items.forEach((item) => {
       this.buildSwatch(item, x, y);
       x += SWATCH_SIZE + SWATCH_GAP;
