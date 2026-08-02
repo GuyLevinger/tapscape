@@ -17,6 +17,13 @@ const DESPAWN_MARGIN = 400;
 // which is what let two obstacles end up unfairly close together later in a run.
 const MIN_REACTION_TIME_S = 1.1;
 
+// Same reasoning as CharacterController's hitbox shrink: a hit box matching the full obstacle
+// texture registers a collision before the sprites visually touch. Trimmed off the top (obstacles
+// sit on the ground, origin (0.5, 1)) so the box stays grounded but is meaningfully shorter than
+// the sprite - directly what a player needs to actually clear it with a jump that looked clean.
+const HITBOX_WIDTH_RATIO = 0.65;
+const HITBOX_HEIGHT_RATIO = 0.75;
+
 export class ObstacleManager {
   private scene: Phaser.Scene;
   private groundY: number;
@@ -88,6 +95,14 @@ export class ObstacleManager {
     obstacle.setOrigin(0.5, 1);
     const body = obstacle.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
+
+    const fullWidth = body.width;
+    const fullHeight = body.height;
+    const hitboxWidth = fullWidth * HITBOX_WIDTH_RATIO;
+    const hitboxHeight = fullHeight * HITBOX_HEIGHT_RATIO;
+    body.setSize(hitboxWidth, hitboxHeight);
+    body.setOffset((fullWidth - hitboxWidth) / 2, fullHeight - hitboxHeight);
+
     obstacle.setVelocityX(-this.scrollSpeed);
 
     this.obstacles.push(obstacle);

@@ -50,6 +50,19 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Notes / deviations from the original docs
 
+- **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:
+  "if i jump too close to obstacle, even not touching it - i fail. same goes for landing"). Both
+  `CharacterController` and `ObstacleManager` previously left the Arcade physics body at its
+  default size - the *full* texture frame (96x128 for the player, 48x64 for every obstacle
+  variant) - so a collision registered whenever those full rectangles overlapped, well before the
+  visibly-drawn shapes (which have their own transparent padding on top of that) actually touched.
+  Both now shrink their body to 60%/80% (player) or 65%/75% (obstacle) of width/height, centered
+  horizontally and anchored to the ground (trimmed only off the top, via `body.setOffset`) so
+  grounded collision with `InfiniteGround` is unaffected. Verified live via Phaser's own
+  `physics.overlap()` swept across a range of relative positions: the horizontal danger zone
+  shrank from 144 to 88.8 world-units (~38% less), and the minimum jump height needed to clear an
+  obstacle dropped from 64px to 50px (~22% less) - both are real, quantified forgiveness gains, not
+  just a "feel" change - while a normal run still ends in death on an actual hit as before.
 - **Fixed a fairness bug where two obstacles could spawn too close together to pass** (user
   report: "sometimes there are 2 obstacles too close to one another, which makes it impossible to
   pass"). Root causes, both in `ObstacleManager`: (1) the old `MIN_GAP` was a fixed 220 world-units

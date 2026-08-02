@@ -5,6 +5,15 @@ const JUMP_VELOCITY = -600;
 const SLIDE_DURATION_MS = 700;
 const SLIDE_SCALE_Y = 0.5;
 
+// The player's sprite (and every obstacle's, see ObstacleManager) is noticeably bigger than the
+// shape actually drawn on it, so a hit/overlap box sized to the full texture registers collisions
+// well before the sprites visually touch ("I jumped/landed and wasn't even touching it" -
+// reported directly). Shrinking the box and anchoring it to the ground (trimming only off the
+// top) keeps grounded collision with InfiniteGround accurate while giving real forgiveness on the
+// axis that actually matters for clearing an obstacle mid-jump.
+const HITBOX_WIDTH_RATIO = 0.6;
+const HITBOX_HEIGHT_RATIO = 0.8;
+
 export type CharacterState = 'idle' | 'running' | 'jump' | 'slide' | 'hit' | 'victory';
 
 export class CharacterController {
@@ -24,6 +33,13 @@ export class CharacterController {
     this.sprite.setCollideWorldBounds(false);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    const fullWidth = body.width;
+    const fullHeight = body.height;
+    const hitboxWidth = fullWidth * HITBOX_WIDTH_RATIO;
+    const hitboxHeight = fullHeight * HITBOX_HEIGHT_RATIO;
+    body.setSize(hitboxWidth, hitboxHeight);
+    body.setOffset((fullWidth - hitboxWidth) / 2, fullHeight - hitboxHeight);
+
     this.normalBodyHeight = body.height;
     this.normalBodyOffsetY = body.offset.y;
     // Caps how far the body can move in a single physics step, so a large frame-time
