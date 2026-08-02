@@ -208,14 +208,20 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   production bundle (grepped the built JS for the marker's distinguishing style - absent - vs. the
   dev server, where it's present and still updates correctly).
 
-## Known limitations still open after Task 30
-
-- An extreme frame-time gap (multi-second stall — observed via a dev-tool viewport resize,
-  potentially also tab backgrounding/device lock on real devices) can still push the player
-  partway through the ground before the per-step `deltaMax` clamp (added in Task 9) fully
-  catches it. Normal gameplay, including ordinary window resizes, is unaffected. Deliberately not
-  addressed in Task 30: the reported repro is a dev-tool viewport *resize*, not a hidden/backgrounded
-  tab, so a `visibilitychange` handler wouldn't actually fix it - the real fix is a general
-  delta-clamp at the scene/game-loop level, which is a bigger change than Task 30's "60 FPS" scope
-  covers. Still worth a dedicated pass (Task 31 or 32) rather than folding it into either
-  unrelated.
+- **Fixed the frame-time-gap ground-tunneling bug flagged above, right after writing that note.**
+  Root cause: `CharacterController`'s `body.deltaMax.y` (added in Task 9 to cap per-step
+  displacement during a frame-time spike) was set to the player's own hitbox height (~102px) - but
+  the ground slab (`GROUND_HEIGHT`) is only 80px thick, so a single clamped step could still be
+  larger than the ground itself and skip past it with zero overlap at either the step's start or
+  end position (Arcade physics only resolves collisions reactively from overlap, not via
+  continuous/swept detection). The two values were never coupled, so nothing tied the clamp to what
+  it actually needed to guarantee. Fixed by deriving `deltaMax.y` from `groundHeight` (now passed
+  into `CharacterController`'s constructor) instead of the player's hitbox: any value strictly less
+  than `groundHeight` guarantees a body resting on the ground's top edge can't clear its far edge in
+  one step regardless of body height, so `groundHeight / 2` (40px) was chosen for comfortable
+  margin - still ~2.5x the deltaMax needed and vastly larger than any normal per-frame fall
+  displacement at 60 FPS, so jump/slide/landing feel is unchanged. Verified live: injecting a
+  simulated 5-second delta directly into `physics.world.update()` while the player was resting on
+  the ground left `body.blocked.down`/`touching.down` both `true` and the body's bottom edge
+  exactly at the ground's top edge (no penetration), where before the fix the same injection was
+  the reported repro for tunneling through.

@@ -26,7 +26,7 @@ export class CharacterController {
   private state: CharacterState = 'idle';
   private isDead = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, groundHeight: number) {
     this.scene = scene;
     this.sprite = scene.physics.add.sprite(x, y, 'player');
     this.sprite.setOrigin(0.5, 1);
@@ -42,10 +42,13 @@ export class CharacterController {
 
     this.normalBodyHeight = body.height;
     this.normalBodyOffsetY = body.offset.y;
-    // Caps how far the body can move in a single physics step, so a large frame-time
-    // spike (tab backgrounded, device locked, slow resize) can't tunnel the player
-    // through the ground instead of colliding with it.
-    body.deltaMax.y = this.normalBodyHeight;
+    // Caps how far the body can move in a single physics step, so a large frame-time spike (tab
+    // backgrounded, device locked, slow resize) can't tunnel the player through the ground
+    // instead of colliding with it. Must be strictly less than groundHeight, not the player's own
+    // hitbox height - if the body is resting exactly on the ground's top edge, a step smaller than
+    // groundHeight always leaves the body's bottom edge inside the ground's y-range (guaranteeing
+    // overlap), regardless of how tall the player's own hitbox is.
+    body.deltaMax.y = groundHeight / 2;
 
     EventBus.on(GameEvents.PLAYER_JUMPED, this.onJump, this);
     EventBus.on(GameEvents.PLAYER_SLID, this.onSlide, this);

@@ -54,7 +54,7 @@ export class WorldScene extends Phaser.Scene {
     this.ground = new InfiniteGround(this, GROUND_HEIGHT, 'ground');
 
     const playerX = width * 0.25;
-    this.character = new CharacterController(this, playerX, height - GROUND_HEIGHT);
+    this.character = new CharacterController(this, playerX, height - GROUND_HEIGHT, GROUND_HEIGHT);
     this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
 
