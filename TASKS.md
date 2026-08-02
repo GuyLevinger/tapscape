@@ -93,8 +93,21 @@ tasks started, to avoid an architecture change partway through:
 - [x] 41. In-run HUD redesigned as a phone status bar (time/battery/signal styling, score & coins
       integrated into that bar rather than separate boxes)
 - [ ] 42. Mute button redesigned as a speaker icon (with a muted/slashed state)
-- [ ] 43. Back/Home button redesigned as a phone nav-bar back icon
-- [ ] 44. Customize entry point redesigned as a settings-gear icon
+- [x] 43. Back/Home button redesigned as a phone nav-bar icon — landed as `PhoneFrame`'s
+      persistent circular home button rather than a literal "back" arrow (see the fourth
+      phone-frame refinement note below)
+- [x] 44. Customize entry point redesigned as a settings-gear icon — landed as a circular gear
+      icon in the Home grid (see the fourth phone-frame refinement note below)
+
+### Visual polish (requested 2026-08-02 for a future session — not yet implemented)
+
+- [ ] 45. App icons — draw actual hand-drawn icons for each home-screen app (Legbook, Slowgram,
+      ChatZap, MeTube, WrongTurn) instead of the current 2-letter text on a flat colored square.
+- [ ] 46. Cosmetic patterns — Customize's phone-skin and wallpaper options (and their equipped
+      results on Home/the bezel) should render as interesting patterns — circles, stars, smilies,
+      etc. — instead of flat colors.
+- [ ] 47. Customize price label — show cosmetic prices spelled out as e.g. "150 Coins" instead of
+      the current abbreviated "150c".
 
 - **Task 41 replaced `UIManager`'s separately-boxed Score/Coins/World-name readouts with a single
   full-width phone status bar** at the top of the in-run HUD, matching the smartphone-UI framing
