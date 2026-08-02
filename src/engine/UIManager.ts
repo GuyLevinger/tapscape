@@ -38,7 +38,9 @@ export class UIManager {
     this.scene = scene;
     this.powerupName = powerupName;
     const { width } = scene.scale;
-    const frame = new PhoneFrame(scene);
+    // showCoins: false - this run's live coin count (built below) occupies the same slot PhoneFrame
+    // would otherwise use for the lifetime wallet balance; showing both would be redundant/confusing.
+    const frame = new PhoneFrame(scene, { showCoins: false });
     const barY = frame.statusBarCenterY;
     const chrome = scene.add.graphics().setScrollFactor(0);
 

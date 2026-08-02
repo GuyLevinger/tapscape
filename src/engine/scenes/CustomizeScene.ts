@@ -13,7 +13,6 @@ const SWATCH_GAP = 20;
 const ROW_HEIGHT = 150;
 
 export class CustomizeScene extends Phaser.Scene {
-  private coinText!: Phaser.GameObjects.Text;
   private toast?: Phaser.GameObjects.Text;
   // The swatch grid's vertical extent overlaps PhoneFrame's left-edge notch (centered on the
   // screen's vertical middle), unlike other scenes' left-aligned content - so it needs to start
@@ -38,15 +37,6 @@ export class CustomizeScene extends Phaser.Scene {
         color: '#ffffff',
       })
       .setOrigin(0.5);
-
-    this.coinText = this.add
-      .text(width - 24, topRowY, '', {
-        fontFamily: 'sans-serif',
-        fontSize: '18px',
-        color: '#facc15',
-      })
-      .setOrigin(1, 0);
-    this.refreshCoinText();
 
     const backButton = this.add
       .text(frame.contentLeftX, topRowY, '< Home', {
@@ -138,9 +128,5 @@ export class CustomizeScene extends Phaser.Scene {
       duration: 400,
       onComplete: () => this.toast?.destroy(),
     });
-  }
-
-  private refreshCoinText(): void {
-    this.coinText.setText(`Coins: ${SaveManager.totalCoins}`);
   }
 }

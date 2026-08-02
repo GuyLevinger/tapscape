@@ -38,16 +38,6 @@ export class HomeScene extends Phaser.Scene {
       this.scene.start('Customize');
     });
 
-    this.add
-      .text(frame.contentLeftX, topRowY, `Coins: ${SaveManager.totalCoins}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '16px',
-        color: '#facc15',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setOrigin(0, 0);
-
     const gridWidth = COLUMNS * ICON_SIZE + (COLUMNS - 1) * GRID_GAP;
     const startX = width / 2 - gridWidth / 2 + ICON_SIZE / 2;
     const startY = height / 2 - 120;

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getEquippedColor } from '@/data/cosmetics';
+import { SaveManager } from '@/save/SaveManager';
 
 // Shared "this is a phone" chrome, drawn identically on every scene per the user's explicit
 // request that the whole app - not just the in-run HUD (Task 41) - read as a phone. Three pieces:
@@ -18,6 +19,10 @@ const BATTERY_H = 11;
 const BATTERY_NUB_W = 2;
 const WIFI_W = 20;
 const SIGNAL_W = 18;
+// Generous fixed slot per number readout so the layout never has to reflow as digits are gained -
+// the icon to a number's left stays put rather than chasing the number's growing edge.
+const NUMBER_SLOT = 54;
+const ICON_GLYPH_W = 12;
 // How often the clock re-reads the system time - a phone status bar clock only needs
 // minute-level freshness, but a short interval keeps it feeling "live" without meaningful cost.
 const CLOCK_REFRESH_MS = 10_000;
@@ -53,8 +58,14 @@ export class PhoneFrame {
   // of at `contentLeftX`, since the notch itself sits in that band and would otherwise overlap it.
   readonly notchRightX = BEZEL_THICKNESS + NOTCH_LEFT_MARGIN + NOTCH_WIDTH;
 
-  constructor(scene: Phaser.Scene) {
+  // `showCoins`: whether PhoneFrame draws the wallet coin balance into the bar itself. Defaults
+  // to true (Home/Results/Customize/Boot all want it there instead of a separate box). WorldScene
+  // passes false because it already shows a *different* number in that exact slot - the live
+  // count of coins collected so far *this run* (Task 41), not the lifetime wallet balance - so it
+  // builds its own readout rather than getting a second, conflicting one from here.
+  constructor(scene: Phaser.Scene, options: { showCoins?: boolean } = {}) {
     const { width, height } = scene.scale;
+    const showCoins = options.showCoins ?? true;
 
     scene.add
       .rectangle(width / 2, height / 2, width - BEZEL_THICKNESS, height - BEZEL_THICKNESS)
@@ -62,10 +73,11 @@ export class PhoneFrame {
       .setOrigin(0.5)
       .setScrollFactor(0);
 
-    // Inset inside the bezel's inner edge on every side, so the bar sits on the screen area the
-    // border frames rather than painting over (or under) the border itself.
-    const barX0 = BEZEL_THICKNESS;
-    const barWidth = width - BEZEL_THICKNESS * 2;
+    // The left-edge notch (drawn below) is conceptually part of the phone's body, not the
+    // display - so the bar (and everything in it) starts clear of that whole column rather than
+    // just the bezel, even though the notch itself only occupies the screen's vertical middle.
+    const barX0 = this.notchRightX;
+    const barWidth = width - BEZEL_THICKNESS - barX0;
     const barY = this.statusBarCenterY;
     scene.add
       .rectangle(barX0 + barWidth / 2, barY, barWidth, STATUS_BAR_HEIGHT, 0x000000, 0.55)
@@ -116,6 +128,26 @@ export class PhoneFrame {
       chrome.fillRect(barX, barY + 7 - h, barWidth2, h);
     });
     cursor = signalLeft - ICON_GAP;
+
+    if (showCoins) {
+      // Coin readout: a small filled circle (matches the coin pickup's yellow tint) plus a
+      // fixed-slot, right-anchored number so the digits grow leftward without disturbing the icon.
+      const coinNumberX = cursor;
+      cursor -= NUMBER_SLOT;
+      const coinIconX = cursor - ICON_GLYPH_W / 2;
+      chrome.fillStyle(0xfacc15, 1);
+      chrome.fillCircle(coinIconX, barY, ICON_GLYPH_W / 2 - 2);
+      cursor -= ICON_GLYPH_W + ICON_GAP;
+
+      scene.add
+        .text(coinNumberX, barY, `${SaveManager.totalCoins}`, {
+          fontFamily: 'sans-serif',
+          fontSize: '16px',
+          color: '#facc15',
+        })
+        .setOrigin(1, 0.5)
+        .setScrollFactor(0);
+    }
 
     this.statusBarContentRightX = cursor;
 

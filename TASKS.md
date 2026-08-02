@@ -164,6 +164,25 @@ tasks started, to avoid an architecture change partway through:
   obscured; two screenshots taken a minute apart during verification showed the clock advancing
   ("9:16 PM" to "9:17 PM"), confirming it reads real time rather than a static string.
 
+- **Third round of user refinements: coins in the bar everywhere, and the bar no longer stretches
+  under the notch's column.** (1) `PhoneFrame` now draws the coin balance itself (yellow-circle
+  icon + fixed-slot number, same style Task 41 built for WorldScene) as part of the shared bar,
+  gated by a `showCoins` constructor option that defaults to true - Home's and Customize's
+  previously separate "Coins: N" boxes are gone, replaced by this. `WorldScene`'s `UIManager`
+  passes `showCoins: false`, since it already occupies that exact slot with a *different* number -
+  the live count of coins collected so far *this run*, not the lifetime wallet balance shown
+  everywhere else - so showing both would be redundant. Because every scene that spends coins
+  (`CustomizeScene`'s swatch purchases, `HomeScene`'s world unlocks) already calls
+  `this.scene.restart()` on success, the freshly-reconstructed `PhoneFrame` picks up the new
+  balance automatically with no extra refresh plumbing needed. (2) The user reframed the left-edge
+  notch's column as part of the phone's physical body rather than the display, even outside the
+  notch's own vertical span - so the status bar's *left* bound moved from `BEZEL_THICKNESS` to
+  `PhoneFrame.notchRightX`, leaving that whole column bare (just background, no bar overlay) top
+  to bottom, not only where the notch graphic itself is drawn. Verified live across Home, a paused
+  World run, and Customize: each shows exactly one coin readout in the bar (wallet balance on
+  Home/Customize, live run count on World), and the bar's dark strip visibly starts to the right of
+  the notch's column on every scene rather than running underneath it.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:
