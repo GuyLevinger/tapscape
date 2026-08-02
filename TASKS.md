@@ -38,7 +38,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 24. ChatZap world — World
 - [x] 25. MeTube world — World
 - [x] 26. WrongTurn world — World
-- [ ] 27. Cosmetics — Customization
+- [x] 27. Cosmetics — Customization
 - [ ] 28. Achievements — Achievement system
 - [ ] 29. World unlocks — Progression
 
@@ -81,6 +81,24 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   much bigger feature than any other world's mechanic in this pass, so `WrongTurnMechanic`
   instead periodically slides in a road-sign image and fades it out — decorative only, same scope
   level as the other 4 worlds' mechanics. Real lane-switching is future work.
+
+- **Task 27's cosmetics catalog covers phone skins and wallpapers only, not "running/victory
+  animations."** The GDD calls for "five phone skins, five wallpapers, three running animations
+  and three victory animations," but the engine has no sprite-frame animation system at all —
+  `CharacterController` only ever displays one texture, tinted per state (the same situation as
+  Task 20's power-ups). An initial pass implemented running/victory "animations" as tint recolors
+  (character sprite tint + Results-screen accent color) to at least give those two categories a
+  render target, but the user redirected mid-task: faking animation content as tint swaps wasn't
+  worth it, so those two categories were cut entirely rather than shipped as reskinned tints.
+  Phone skin and wallpaper survive because they map onto real, already-rendered surfaces (the Home
+  screen's case-border rectangle and its background color). `src/data/cosmetics.ts` holds the
+  10-item catalog (5 phone skins + 5 wallpapers, one free default each, the rest priced in coins);
+  `CustomizeScene` (reachable from a Home-screen button) is the purchase/equip UI; `SaveManager`
+  gained generic `spendCoins`/`unlockCosmetic`/`equipCosmetic`/`getEquippedCosmetic` primitives with
+  no knowledge of the catalog itself, matching the existing separation where `worlds.ts`/
+  `worldContent.ts` don't know about `SaveManager` either. Verified live: purchase deducts coins
+  and unlocks+equips the item, insufficient-coin clicks show a toast without spending, and the
+  equipped phone skin/wallpaper persist across a reload and render immediately on Home.
 
 ## Known limitations to revisit during hardening (Task 30)
 

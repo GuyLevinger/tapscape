@@ -9,6 +9,7 @@ export interface SaveData {
   worlds: Record<string, WorldSaveData>;
   worldsUnlocked: string[];
   cosmeticsUnlocked: string[];
+  cosmeticsEquipped: Record<string, string>;
   achievementsUnlocked: string[];
   settings: { musicVolume: number; sfxVolume: number; muted: boolean };
 }
@@ -22,6 +23,7 @@ function defaultSaveData(): SaveData {
     worlds: {},
     worldsUnlocked: ['legbook'],
     cosmeticsUnlocked: [],
+    cosmeticsEquipped: {},
     achievementsUnlocked: [],
     settings: { musicVolume: 1, sfxVolume: 1, muted: false },
   };
@@ -80,6 +82,35 @@ class SaveManagerImpl {
   setSfxVolume(volume: number): void {
     this.data.settings.sfxVolume = Math.max(0, Math.min(1, volume));
     this.persist();
+  }
+
+  isCosmeticUnlocked(id: string): boolean {
+    return this.data.cosmeticsUnlocked.includes(id);
+  }
+
+  unlockCosmetic(id: string): void {
+    if (!this.data.cosmeticsUnlocked.includes(id)) {
+      this.data.cosmeticsUnlocked.push(id);
+      this.persist();
+    }
+  }
+
+  getEquippedCosmetic(category: string): string | undefined {
+    return this.data.cosmeticsEquipped[category];
+  }
+
+  equipCosmetic(category: string, id: string): void {
+    this.data.cosmeticsEquipped[category] = id;
+    this.persist();
+  }
+
+  spendCoins(amount: number): boolean {
+    if (amount <= 0 || this.data.totalCoins < amount) {
+      return false;
+    }
+    this.data.totalCoins -= amount;
+    this.persist();
+    return true;
   }
 
   recordRun(

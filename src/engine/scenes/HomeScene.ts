@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { Worlds } from '@/data/worlds';
+import { getEquippedColor } from '@/data/cosmetics';
 
 const ICON_SIZE = 96;
 const COLUMNS = 3;
 const GRID_GAP = 32;
+const BEZEL_THICKNESS = 14;
 
 export class HomeScene extends Phaser.Scene {
   constructor() {
@@ -12,7 +14,13 @@ export class HomeScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#111318');
+    this.cameras.main.setBackgroundColor(getEquippedColor('wallpaper'));
+
+    // Placeholder "phone skin": a colored case border, since no phone-chrome art exists yet.
+    this.add
+      .rectangle(width / 2, height / 2, width - BEZEL_THICKNESS, height - BEZEL_THICKNESS)
+      .setStrokeStyle(BEZEL_THICKNESS, getEquippedColor('phoneSkin'))
+      .setOrigin(0.5);
 
     this.add
       .text(width / 2, 48, '9:41', {
@@ -21,6 +29,20 @@ export class HomeScene extends Phaser.Scene {
         color: '#ffffff',
       })
       .setOrigin(0.5);
+
+    const customizeButton = this.add
+      .text(width - 24, 24, 'Customize', {
+        fontFamily: 'sans-serif',
+        fontSize: '16px',
+        color: '#ffffff',
+        backgroundColor: '#00000055',
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true });
+    customizeButton.on('pointerdown', () => {
+      this.scene.start('Customize');
+    });
 
     const gridWidth = COLUMNS * ICON_SIZE + (COLUMNS - 1) * GRID_GAP;
     const startX = width / 2 - gridWidth / 2 + ICON_SIZE / 2;
