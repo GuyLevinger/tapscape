@@ -85,7 +85,7 @@ tasks started, to avoid an architecture change partway through:
 - [x] 39. Themed hazard re-skins + effects — Notification pop-up (solid barrier), Glitch Zone
       (temporary control invert), Low Battery Zone (temporary slow), WiFi Dead Zone (temporarily
       disables power-ups)
-- [ ] 40. Wire hazard variety into per-difficulty chunk definitions — easy/medium/hard pattern
+- [x] 40. Wire hazard variety into per-difficulty chunk definitions — easy/medium/hard pattern
       progression and combo formations (approximated safe-slot layouts per above)
 
 ### Phone-style chrome for menus/HUD
@@ -439,6 +439,28 @@ tasks started, to avoid an architecture change partway through:
   `EventBus.off(event, handler, this)` pattern already proven correct for every other listener in
   this codebase (`CharacterController`'s `PLAYER_JUMPED`/`PLAYER_SLID` handlers, `AudioManager`,
   `FxManager`, `UIManager`), applied to a two-line boolean flip.
+
+- **Task 40 turned the flat, chunk-difficulty-blind formation chances from Tasks 34-37 into a
+  per-difficulty table.** Before this task, `ChunkTypeDef.difficulty` (easy/medium/hard, from
+  `chunkTypes.ts`) only controlled how many obstacle *slots* a chunk got (`count = difficulty`) -
+  every slot then rolled the exact same flat chance of becoming a tight-pair/wide-block/slalom/gap/
+  laser-gate formation regardless of tier, so a "hard" chunk was only busier, never more
+  complex, than an "easy" one. `FORMATION_CHANCES` (`ObstacleManager.ts`) now maps each
+  `ChunkDifficulty` to its own formation weights: easy is plain ground/overhead obstacles only (no
+  formations at all), medium introduces the two simplest combos (tight pair, slalom), and hard
+  keeps the exact flat values every formation used before this task (tight pair, wide block,
+  slalom, gap, laser) - so hard chunks are unchanged and easy/medium are strict subsets of that
+  mix, not new tuning of the formations themselves. `spawnForChunk` looks up the table by
+  `chunkType.difficulty` instead of using the old always-on constants. Verified live (deterministic,
+  same approach as Task 37's timer verification - `window.__game`'s dev-only exposure gives direct
+  access to `WorldScene`'s real `ObstacleManager` instance, so this drove the actual spawn code
+  rather than a re-implementation): 300 simulated easy chunks produced zero formations (only plain
+  obstacles, ~34% overhead ratio matching the unrelated Task 33 base rate); 300 medium chunks
+  produced formations in ~49% of chunk-calls with zero laser gates (matching the expected ~47% from
+  a 0.27 per-slot chance across medium's 2 slots/chunk, tight-pair+slalom only); 300 hard chunks
+  produced formations in ~93% of chunk-calls including laser gates (matching the expected ~93% from
+  the full 0.59 per-slot chance across hard's 3 slots/chunk) - confirming the three tiers are now
+  actually distinct, not just different obstacle counts of the same mix.
 
 - **Fixed `WIDE_BLOCK` and `GAP` (Tasks 34/36) being mathematically impossible to clear** (user
   report, live playtesting: "too many straight obstacles makes it impossible to pass, it looks like

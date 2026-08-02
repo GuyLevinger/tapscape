@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ChunkTypeDef } from '@/data/chunkTypes';
+import type { ChunkDifficulty, ChunkTypeDef } from '@/data/chunkTypes';
 
 // Keeps obstacles off chunk edges (so they don't spawn flush against a
 // neighboring chunk's obstacle) and far enough apart to always be avoidable
@@ -54,9 +54,7 @@ const NOTIFICATION_SKIN_CHANCE = 0.2;
 // as "impossible" in real play and confirmed as a genuine bug, not a difficulty complaint. Re-tuned
 // to keep a real timing window (not just barely non-negative): 121-unit/230ms for WIDE_BLOCK,
 // 136-unit/180ms for GAP (still the wider of the two, per its "widest, most committing" intent).
-const TIGHT_PAIR_CHANCE = 0.15;
 const TIGHT_PAIR_GAP = 70;
-const WIDE_BLOCK_CHANCE = 0.12;
 const WIDE_BLOCK_COUNT = 3;
 const WIDE_BLOCK_SPACING = 45;
 
@@ -66,7 +64,6 @@ const WIDE_BLOCK_SPACING = 45;
 // landed) by the time the second passes, rather than two independent reactions. ~0.53s apart at
 // base scroll speed, comfortably inside a ~1.0s jump's airtime. Order (ground-then-overhead vs.
 // overhead-then-ground) is randomized per spawn for variety.
-const SLALOM_CHANCE = 0.12;
 const SLALOM_GAP = 160;
 
 // A wide, near-continuous run of ground obstacles standing in for a "gap in the track" - the user
@@ -76,7 +73,6 @@ const SLALOM_GAP = 160;
 // WIDE_BLOCK comment above for why "widest" has a hard physical ceiling (~247 units at base speed)
 // well below the original 6-obstacle/55-spacing version (306 units - confirmed mathematically
 // unclearable by any jump timing, not just difficult).
-const GAP_CHANCE = 0.1;
 const GAP_COUNT = 4;
 const GAP_SPACING = 35;
 
@@ -88,13 +84,37 @@ const GAP_SPACING = 35;
 // a heads-up) -> on (red, lethal) -> back to off. Reuses the plain ground/overhead placement/hitbox
 // code from Tasks 33-34 and only re-tags `variant` to `'laser'` afterward, so positioning stays
 // identical to the already-verified variants - tint is the only new visual, no new art.
-const LASER_CHANCE = 0.1;
 const LASER_OFF_MS = 1500;
 const LASER_WARNING_MS = 500;
 const LASER_ON_MS = 1500;
 const LASER_OFF_TINT = 0x64748b;
 const LASER_WARNING_TINT = 0xfacc15;
 const LASER_ON_TINT = 0xff4444;
+
+// Task 40: the formations above (Tasks 34-37) were previously offered at the same flat chance
+// regardless of chunk difficulty - a "hard" chunk only spawned more obstacles (see `count` in
+// spawnForChunk below), not meaningfully harder ones, since ChunkSelector's easy/medium/hard
+// adjacency rules (chunkTypes.ts) had nothing to say about *which* hazard shapes each tier could
+// produce. This table is what actually gives the three tiers a distinct feel: easy chunks are
+// plain single obstacles only (no formations at all, matching "easy" meaning something), medium
+// introduces the two simplest combos (a well-timed jump, and a jump-then-don't-jump decision),
+// and hard unlocks the full set including the two formations with a hard physical ceiling on how
+// wide they can be (WIDE_BLOCK, GAP - see their constant comments) plus the wait-for-it laser
+// gate. Hard's weights are the exact flat values every formation used before this task, so hard
+// chunks are unchanged; easy/medium are strict subsets of that mix, not new tuning.
+interface FormationChances {
+  tightPair: number;
+  wideBlock: number;
+  slalom: number;
+  gap: number;
+  laser: number;
+}
+
+const FORMATION_CHANCES: Record<ChunkDifficulty, FormationChances> = {
+  1: { tightPair: 0, wideBlock: 0, slalom: 0, gap: 0, laser: 0 },
+  2: { tightPair: 0.15, wideBlock: 0, slalom: 0.12, gap: 0, laser: 0 },
+  3: { tightPair: 0.15, wideBlock: 0.12, slalom: 0.12, gap: 0.1, laser: 0.1 },
+};
 
 type LaserPhase = 'off' | 'warning' | 'on';
 
@@ -189,21 +209,23 @@ export class ObstacleManager {
     // Candidate slots come straight from chunk difficulty - spawnObstacle/spawnTightPair/
     // spawnWideBlock are what actually enforce the minimum gap (against the last obstacle spawned,
     // whether it came from this chunk or the previous one), so crowded candidates are thinned out
-    // rather than placed.
+    // rather than placed. Which formations are even eligible is also gated by difficulty (Task 40)
+    // - see the FORMATION_CHANCES comment above for why.
     const count = chunkType.difficulty;
+    const chances = FORMATION_CHANCES[chunkType.difficulty];
     for (let i = 0; i < count; i++) {
       const slot = count === 1 ? 0.5 : i / (count - 1);
       const x = chunkX + EDGE_MARGIN + slot * usableWidth;
       const roll = Math.random();
-      if (roll < WIDE_BLOCK_CHANCE) {
+      if (roll < chances.wideBlock) {
         this.spawnWideBlock(x);
-      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE) {
+      } else if (roll < chances.wideBlock + chances.tightPair) {
         this.spawnTightPair(x);
-      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE) {
+      } else if (roll < chances.wideBlock + chances.tightPair + chances.slalom) {
         this.spawnSlalom(x);
-      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE + GAP_CHANCE) {
+      } else if (roll < chances.wideBlock + chances.tightPair + chances.slalom + chances.gap) {
         this.spawnGap(x);
-      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE + GAP_CHANCE + LASER_CHANCE) {
+      } else if (roll < chances.wideBlock + chances.tightPair + chances.slalom + chances.gap + chances.laser) {
         this.spawnLaserGate(x);
       } else {
         this.spawnObstacle(x);
