@@ -246,6 +246,36 @@ tasks started, to avoid an architecture change partway through:
   "Phone Skin" and "Wallpaper" rows and their labels centered in the usable screen width, clear of
   the notch on the left and symmetric against the home button's margin on the right.
 
+- **Seventh round of user refinements: white padding backdrop, status bar flush against the
+  border, and a rounded-corner overlap bug.** (1) The padding introduced two rounds ago showed the
+  scene's own background color rather than reading as space outside the device, so it didn't look
+  distinct from the phone's screen. `PhoneFrame` now fills that padding with white
+  (`OUTSIDE_BACKGROUND_COLOR`), drawn as four strips around the phone's bounding box rather than
+  one full-canvas rect - a full-canvas fill would have painted over WorldScene's gameplay (which is
+  already drawn by the time `UIManager` constructs `PhoneFrame`) or over Home/Customize/Results'
+  own screen-color content (drawn *after* `PhoneFrame` there), so strips confined to strictly
+  outside the phone's bounds were the only safe option under the existing draw-order constraints
+  (same reasoning already logged for the shadow/border two rounds ago). (2) The status bar had a
+  visible gap between it and the border above it, showing the wrong color through the gap - a real
+  coordinate bug, not a styling choice: `Graphics.strokeRoundedRect` centers its line on the path
+  it's given, so the previous code (which computed the screen's inner edge as a full
+  `BEZEL_THICKNESS` from the *path*, i.e. treating the border like the old `Rectangle.setStrokeStyle`'s
+  inward-only stroke) was actually placing the screen's top edge `BEZEL_THICKNESS / 2` (7px)
+  further in than the stroke's true inner edge, leaving that gap. Fixed by explicitly separating
+  the phone's true visible outer edge (`outerX0/Y0/X1/Y1`, exactly `SCREEN_PADDING` in from the
+  canvas) from the stroke's centerline path (`pathX0/Y0`, inset a further half-bezel from that) -
+  the screen bound is now correctly derived as a full bezel thickness in from the *outer* edge,
+  which lines up exactly with the stroke's real inner edge. (3) The status bar's dark background
+  was a sharp-cornered `Rectangle` sitting flush against the screen's rounded top-right corner, so
+  its corner poked out past the curve and visibly overlapped the border there. Switched it to a
+  `Graphics.fillRoundedRect` with only the top-right corner rounded
+  (`{ tl: 0, tr: STATUS_BAR_CORNER_RADIUS, bl: 0, br: 0 }`) - the other three corners don't sit
+  near any rounded phone corner (top-left is well clear of the left edge thanks to the notch;
+  both bottom corners are far below the top curve) so only that one needed rounding. Verified
+  live: Home and a paused World run both show white padding with no scene-background bleed-through,
+  the status bar flush against the border top-to-bottom with no gap, and its top-right corner
+  sitting cleanly inside the frame's curve instead of poking through it.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

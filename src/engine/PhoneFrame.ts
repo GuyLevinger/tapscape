@@ -17,8 +17,15 @@ import { SaveManager } from '@/save/SaveManager';
 const SCREEN_PADDING = 20;
 const CORNER_RADIUS = 40;
 const BEZEL_THICKNESS = 14;
+// Neutral backdrop for the padding outside the phone - distinct from whatever color the phone's
+// own screen happens to be showing (wallpaper, a world's color, etc.), so the device visibly
+// floats over it instead of blending in.
+const OUTSIDE_BACKGROUND_COLOR = 0xffffff;
 
 const STATUS_BAR_HEIGHT = 40;
+// The status bar sits flush against the top of the screen, so its own top-right corner is drawn
+// rounded too - otherwise its sharp corner pokes past the phone's rounded corner into the bezel.
+const STATUS_BAR_CORNER_RADIUS = 16;
 const STATUS_BAR_PAD = 16;
 const ICON_GAP = 10;
 const BATTERY_W = 22;
@@ -88,17 +95,25 @@ export class PhoneFrame {
     const showCoins = options.showCoins ?? true;
     const showHomeButton = options.showHomeButton ?? true;
 
-    // Phone body bounds (inset from the canvas edge) and screen bounds (inset further, inside the
-    // bezel) - everything below positions itself off the screen bounds, not the raw canvas, so it
-    // never bleeds into the padding or the bezel stroke itself.
-    const bodyX0 = SCREEN_PADDING;
-    const bodyY0 = SCREEN_PADDING;
-    const bodyWidth = width - SCREEN_PADDING * 2;
-    const bodyHeight = height - SCREEN_PADDING * 2;
-    const screenX0 = bodyX0 + BEZEL_THICKNESS;
-    const screenY0 = bodyY0 + BEZEL_THICKNESS;
-    const screenX1 = bodyX0 + bodyWidth - BEZEL_THICKNESS;
-    const screenY1 = bodyY0 + bodyHeight - BEZEL_THICKNESS;
+    // `outerX0/Y0/X1/Y1` is the phone's true visible outer edge (SCREEN_PADDING in from the
+    // canvas). `strokeRoundedRect` centers its line on the path it's given, so the path itself
+    // has to be inset by half the bezel thickness for the stroke's OUTER edge to land exactly on
+    // that boundary - and by the same logic, the stroke's INNER edge (where the screen starts)
+    // lands a full bezel thickness in from `outerX0/Y0`, not the half-thickness a naive read of
+    // the path position would suggest. Getting this wrong is what previously left a gap between
+    // the border and the status bar, showing the background color through it.
+    const outerX0 = SCREEN_PADDING;
+    const outerY0 = SCREEN_PADDING;
+    const outerX1 = width - SCREEN_PADDING;
+    const outerY1 = height - SCREEN_PADDING;
+    const pathX0 = outerX0 + BEZEL_THICKNESS / 2;
+    const pathY0 = outerY0 + BEZEL_THICKNESS / 2;
+    const pathWidth = outerX1 - outerX0 - BEZEL_THICKNESS;
+    const pathHeight = outerY1 - outerY0 - BEZEL_THICKNESS;
+    const screenX0 = outerX0 + BEZEL_THICKNESS;
+    const screenY0 = outerY0 + BEZEL_THICKNESS;
+    const screenX1 = outerX1 - BEZEL_THICKNESS;
+    const screenY1 = outerY1 - BEZEL_THICKNESS;
     const screenCenterY = (screenY0 + screenY1) / 2;
 
     this.statusBarCenterY = screenY0 + STATUS_BAR_HEIGHT / 2;
@@ -107,18 +122,29 @@ export class PhoneFrame {
     this.notchRightX = screenX0 + NOTCH_LEFT_MARGIN + NOTCH_WIDTH;
     this.screenRightX = screenX1;
 
+    // Neutral backdrop for the area outside the phone, drawn as four strips around its bounding
+    // box (not one full-canvas fill) so it never paints over the phone's own screen content -
+    // WorldScene in particular constructs PhoneFrame *after* its gameplay is already drawn, so an
+    // opaque fill spanning the whole canvas would have hidden it.
+    const backdrop = scene.add.graphics().setScrollFactor(0);
+    backdrop.fillStyle(OUTSIDE_BACKGROUND_COLOR, 1);
+    backdrop.fillRect(0, 0, width, outerY0);
+    backdrop.fillRect(0, outerY1, width, height - outerY1);
+    backdrop.fillRect(0, outerY0, outerX0, outerY1 - outerY0);
+    backdrop.fillRect(outerX1, outerY0, width - outerX1, outerY1 - outerY0);
+
     // A soft drop shadow (a slightly larger, faint rounded rect offset down-right) sits behind the
     // body outline to lift it off the background, then the body itself - both just strokes, so
     // nothing behind them (a scene's own content) is ever painted over.
     const shadow = scene.add.graphics().setScrollFactor(0);
     shadow.lineStyle(BEZEL_THICKNESS, 0x000000, 0.25);
-    shadow.strokeRoundedRect(bodyX0 + 3, bodyY0 + 5, bodyWidth, bodyHeight, CORNER_RADIUS);
+    shadow.strokeRoundedRect(pathX0 + 3, pathY0 + 5, pathWidth, pathHeight, CORNER_RADIUS);
 
     scene.add
       .graphics()
       .setScrollFactor(0)
       .lineStyle(BEZEL_THICKNESS, getEquippedColor('phoneSkin'), 1)
-      .strokeRoundedRect(bodyX0, bodyY0, bodyWidth, bodyHeight, CORNER_RADIUS);
+      .strokeRoundedRect(pathX0, pathY0, pathWidth, pathHeight, CORNER_RADIUS);
 
     // The left-edge notch (drawn below) is conceptually part of the phone's body, not the
     // display - so the bar (and everything in it) starts clear of that whole column rather than
@@ -126,9 +152,19 @@ export class PhoneFrame {
     const barX0 = this.notchRightX;
     const barWidth = screenX1 - barX0;
     const barY = this.statusBarCenterY;
+    // A sharp-cornered rect here would poke its top-right corner past the phone's rounded corner
+    // (the bar sits flush against the top of the screen, right where that curve is) - rounding it
+    // keeps the bar's own corner inside the frame.
     scene.add
-      .rectangle(barX0 + barWidth / 2, barY, barWidth, STATUS_BAR_HEIGHT, 0x000000, 0.55)
-      .setScrollFactor(0);
+      .graphics()
+      .setScrollFactor(0)
+      .fillStyle(0x000000, 0.55)
+      .fillRoundedRect(barX0, screenY0, barWidth, STATUS_BAR_HEIGHT, {
+        tl: 0,
+        tr: STATUS_BAR_CORNER_RADIUS,
+        bl: 0,
+        br: 0,
+      });
 
     const timeText = scene.add
       .text(barX0 + STATUS_BAR_PAD, barY, formatClockTime(), {
