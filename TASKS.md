@@ -183,6 +183,32 @@ tasks started, to avoid an architecture change partway through:
   Home/Customize, live run count on World), and the bar's dark strip visibly starts to the right of
   the notch's column on every scene rather than running underneath it.
 
+- **Fourth round of user refinements: a physical-style circular home button, and Customize
+  recast as a settings-gear app icon instead of a corner button.** (1) `PhoneFrame` gained a
+  circular home button on the RIGHT edge, vertically centered - continuing the "phone rotated 90
+  degrees left" framing from the notch (Task 41 follow-up): a real phone's home button lives on
+  the BOTTOM edge, and rotating the device 90 degrees left carries that edge to the right side,
+  the mirror image of the top edge (speaker/camera) carrying to the left. It's a plain
+  `scene.add.circle` with a stroke rim (so it reads as a physical button, not flat UI) wired
+  directly to `scene.scene.start('Home')`, gated by a `showHomeButton` option (default true) that
+  `HomeScene` and `ResultsScene` both opt out of - Home because navigating "home" from Home is a
+  no-op, Results because it already has its own explicit "Home" choice alongside "Retry" as its
+  primary CTA pair, and a second persistent home affordance there would be redundant. Every
+  scene's old per-scene "< Home" text button (`UIManager`'s in `WorldScene`, `CustomizeScene`'s
+  own) is gone now that `PhoneFrame` provides one universally; `UIManager`'s constructor lost its
+  now-unused `onBack` callback parameter entirely rather than keeping dead plumbing around.
+  (2) `HomeScene`'s "Customize" button moved from a top-right corner text box into the world-icon
+  grid itself, in the next open slot right after the 5 world icons (filling the grid out to a full
+  2x3) - drawn as a circular gear (a solid disc plus 8 hand-drawn radial teeth via `Graphics`
+  `fillPoints`, no new art, same technique as `PhoneFrame`'s other icons) rather than a colored
+  square with 2-letter text, but otherwise wired up identically to a world icon (same click
+  handler pattern, same caption-below-the-icon layout) - "just another app icon," per the user.
+  Verified live: screenshots of Home show the gear icon rendering clearly in its grid slot with no
+  leftover corner button, and the World scene shows the home button on the right edge with no
+  overlap; a scripted click on it (with `DifficultyManager`'s scroll speed neutralized first, so
+  an unattended run couldn't die and transition to Results out from under the test - a documented
+  quirk of this environment) confirmed a real `pointerdown` navigates from World back to Home.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:

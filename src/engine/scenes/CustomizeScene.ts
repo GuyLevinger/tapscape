@@ -38,17 +38,6 @@ export class CustomizeScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const backButton = this.add
-      .text(frame.contentLeftX, topRowY, '< Home', {
-        fontFamily: 'sans-serif',
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setInteractive({ useHandCursor: true });
-    backButton.on('pointerdown', () => this.scene.start('Home'));
-
     this.rowStartX = frame.notchRightX + 16;
     let rowY = topRowY + 106;
     CosmeticCategories.forEach(({ key, label }) => {

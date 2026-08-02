@@ -28,13 +28,7 @@ export class UIManager {
   private onCoinCollected = () => this.punch(this.coinText);
   private onPowerupPicked = () => this.punch(this.powerupText);
 
-  constructor(
-    scene: Phaser.Scene,
-    worldName: string,
-    audioManager: AudioManager,
-    onBack: () => void,
-    powerupName = 'Shield',
-  ) {
+  constructor(scene: Phaser.Scene, worldName: string, audioManager: AudioManager, powerupName = 'Shield') {
     this.scene = scene;
     this.powerupName = powerupName;
     const { width } = scene.scale;
@@ -110,20 +104,8 @@ export class UIManager {
       .setScrollFactor(0)
       .setVisible(false);
 
-    const backButton = scene.add
-      .text(frame.contentLeftX, frame.statusBarBottomY + 8, '< Home', {
-        fontFamily: 'sans-serif',
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setInteractive({ useHandCursor: true })
-      .setScrollFactor(0);
-    backButton.on('pointerdown', onBack);
-
     this.muteButton = scene.add
-      .text(frame.contentLeftX, frame.statusBarBottomY + 48, scene.sound.mute ? 'Unmute' : 'Mute', {
+      .text(frame.contentLeftX, frame.statusBarBottomY + 8, scene.sound.mute ? 'Unmute' : 'Mute', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#ffffff',

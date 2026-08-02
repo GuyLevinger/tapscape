@@ -135,15 +135,7 @@ export class WorldScene extends Phaser.Scene {
     this.audioManager.playMusic('music_theme');
     new FxManager(this);
 
-    this.uiManager = new UIManager(
-      this,
-      world.name,
-      this.audioManager,
-      () => {
-        this.scene.start('Home');
-      },
-      content.powerupName,
-    );
+    this.uiManager = new UIManager(this, world.name, this.audioManager, content.powerupName);
 
     this.signatureMechanic = content.createSignatureMechanic?.(this, {
       character: this.character,

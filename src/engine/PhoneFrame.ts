@@ -3,12 +3,13 @@ import { getEquippedColor } from '@/data/cosmetics';
 import { SaveManager } from '@/save/SaveManager';
 
 // Shared "this is a phone" chrome, drawn identically on every scene per the user's explicit
-// request that the whole app - not just the in-run HUD (Task 41) - read as a phone. Three pieces:
+// request that the whole app - not just the in-run HUD (Task 41) - read as a phone. Four pieces:
 // a case-bezel border, a top status bar (real local time + decorative signal/wifi/battery,
-// entirely inside the bezel rather than drawn under/over it), and a speaker+camera cutout on the
-// LEFT edge, vertically centered on the screen - the user described this as "the phone rotated 90
-// degrees," i.e. the hardware cluster that's normally centered on a portrait phone's top edge now
-// sits on the left edge instead, while the status bar itself stays unrotated at the top.
+// entirely inside the bezel rather than drawn under/over it), a speaker+camera cutout on the LEFT
+// edge, and a circular home button on the RIGHT edge - both vertically centered on the screen. The
+// user described this as "the phone rotated 90 degrees left": a real phone's top edge (speaker +
+// camera) rotates to the left side, and its bottom edge (home button) rotates to the right side,
+// while the status bar itself stays unrotated at the top.
 const BEZEL_THICKNESS = 14;
 
 const STATUS_BAR_HEIGHT = 40;
@@ -40,6 +41,12 @@ const SPEAKER_CAMERA_GAP = 16;
 const CAMERA_RADIUS = 6;
 const NOTCH_HEIGHT = NOTCH_PAD * 2 + SPEAKER_H + SPEAKER_CAMERA_GAP + CAMERA_RADIUS * 2;
 
+// Physical home button, mirrored to the RIGHT edge and vertically centered - per the same "phone
+// rotated 90 degrees left" framing as the notch: a real phone's home button lives on the BOTTOM
+// edge, and rotating the device 90 degrees left carries the bottom edge to the right side.
+const HOME_BUTTON_RADIUS = 22;
+const HOME_BUTTON_RIGHT_MARGIN = 8;
+
 export class PhoneFrame {
   readonly statusBarHeight = STATUS_BAR_HEIGHT;
   // Vertical center of the status bar - callers adding their own content into the bar (e.g.
@@ -63,9 +70,14 @@ export class PhoneFrame {
   // passes false because it already shows a *different* number in that exact slot - the live
   // count of coins collected so far *this run* (Task 41), not the lifetime wallet balance - so it
   // builds its own readout rather than getting a second, conflicting one from here.
-  constructor(scene: Phaser.Scene, options: { showCoins?: boolean } = {}) {
+  // `showHomeButton`: whether PhoneFrame draws the physical-style circular home button. Defaults
+  // to true; HomeScene passes false since navigating "home" from Home is meaningless, and
+  // ResultsScene passes false because it already has its own explicit "Home" choice alongside
+  // "Retry" as its primary CTA pair - a second, redundant home affordance would be confusing there.
+  constructor(scene: Phaser.Scene, options: { showCoins?: boolean; showHomeButton?: boolean } = {}) {
     const { width, height } = scene.scale;
     const showCoins = options.showCoins ?? true;
+    const showHomeButton = options.showHomeButton ?? true;
 
     scene.add
       .rectangle(width / 2, height / 2, width - BEZEL_THICKNESS, height - BEZEL_THICKNESS)
@@ -174,6 +186,17 @@ export class PhoneFrame {
     notch.fillCircle(notchX + NOTCH_WIDTH / 2, cameraY, CAMERA_RADIUS);
     notch.lineStyle(1, 0x475569, 1);
     notch.strokeCircle(notchX + NOTCH_WIDTH / 2, cameraY, CAMERA_RADIUS);
+
+    if (showHomeButton) {
+      const homeX = width - BEZEL_THICKNESS - HOME_BUTTON_RIGHT_MARGIN - HOME_BUTTON_RADIUS;
+      const homeY = height / 2;
+      const homeButton = scene.add
+        .circle(homeX, homeY, HOME_BUTTON_RADIUS, 0x1e293b)
+        .setStrokeStyle(2, 0x94a3b8)
+        .setScrollFactor(0)
+        .setInteractive({ useHandCursor: true });
+      homeButton.on('pointerdown', () => scene.scene.start('Home'));
+    }
   }
 }
 

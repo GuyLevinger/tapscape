@@ -21,34 +21,23 @@ export class HomeScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(getEquippedColor('wallpaper'));
 
-    const frame = new PhoneFrame(this);
-    const topRowY = frame.statusBarBottomY + 8;
-
-    const customizeButton = this.add
-      .text(width - 24, topRowY, 'Customize', {
-        fontFamily: 'sans-serif',
-        fontSize: '16px',
-        color: '#ffffff',
-        backgroundColor: '#00000055',
-        padding: { x: 10, y: 6 },
-      })
-      .setOrigin(1, 0)
-      .setInteractive({ useHandCursor: true });
-    customizeButton.on('pointerdown', () => {
-      this.scene.start('Customize');
-    });
+    // showHomeButton: false - PhoneFrame's persistent circular home button is for navigating BACK
+    // to Home from elsewhere; showing it while already on Home would do nothing useful.
+    new PhoneFrame(this, { showHomeButton: false });
 
     const gridWidth = COLUMNS * ICON_SIZE + (COLUMNS - 1) * GRID_GAP;
     const startX = width / 2 - gridWidth / 2 + ICON_SIZE / 2;
     const startY = height / 2 - 120;
+    const gridX = (index: number) => startX + (index % COLUMNS) * (ICON_SIZE + GRID_GAP);
+    const gridY = (index: number) => startY + Math.floor(index / COLUMNS) * (ICON_SIZE + GRID_GAP + 28);
 
     Worlds.forEach((world, index) => {
-      const col = index % COLUMNS;
-      const row = Math.floor(index / COLUMNS);
-      const x = startX + col * (ICON_SIZE + GRID_GAP);
-      const y = startY + row * (ICON_SIZE + GRID_GAP + 28);
-      this.buildWorldIcon(world, x, y);
+      this.buildWorldIcon(world, gridX(index), gridY(index));
     });
+
+    // Customize is styled as a settings-gear app icon rather than a corner text button, sitting in
+    // the grid's next open slot right after the world icons - "just another app icon."
+    this.buildCustomizeIcon(gridX(Worlds.length), gridY(Worlds.length));
   }
 
   private buildWorldIcon(world: WorldDef, x: number, y: number): void {
@@ -84,6 +73,61 @@ export class HomeScene extends Phaser.Scene {
       }
       this.attemptUnlock(world);
     });
+  }
+
+  // A circular settings-gear icon, matching a phone's settings app convention, dropped into the
+  // grid's next open slot right after the world icons rather than living as a special corner
+  // button - "just another app icon like the other apps."
+  private buildCustomizeIcon(x: number, y: number): void {
+    const radius = ICON_SIZE / 2;
+    const icon = this.add
+      .circle(x, y, radius, 0x374151)
+      .setInteractive({ useHandCursor: true });
+
+    const gear = this.add.graphics();
+    const bodyRadius = radius * 0.32;
+    const toothOuterRadius = radius * 0.46;
+    const toothInnerRadius = radius * 0.3;
+    const teeth = 8;
+    const halfAngle = ((Math.PI * 2) / teeth) * 0.35;
+    gear.fillStyle(0xffffff, 1);
+    for (let i = 0; i < teeth; i++) {
+      const angle = i * ((Math.PI * 2) / teeth);
+      gear.fillPoints(
+        [
+          new Phaser.Math.Vector2(
+            x + toothInnerRadius * Math.cos(angle - halfAngle),
+            y + toothInnerRadius * Math.sin(angle - halfAngle),
+          ),
+          new Phaser.Math.Vector2(
+            x + toothOuterRadius * Math.cos(angle - halfAngle),
+            y + toothOuterRadius * Math.sin(angle - halfAngle),
+          ),
+          new Phaser.Math.Vector2(
+            x + toothOuterRadius * Math.cos(angle + halfAngle),
+            y + toothOuterRadius * Math.sin(angle + halfAngle),
+          ),
+          new Phaser.Math.Vector2(
+            x + toothInnerRadius * Math.cos(angle + halfAngle),
+            y + toothInnerRadius * Math.sin(angle + halfAngle),
+          ),
+        ],
+        true,
+      );
+    }
+    gear.fillCircle(x, y, bodyRadius);
+    gear.fillStyle(0x374151, 1);
+    gear.fillCircle(x, y, bodyRadius * 0.4);
+
+    this.add
+      .text(x, y + ICON_SIZE / 2 + 16, 'Customize', {
+        fontFamily: 'sans-serif',
+        fontSize: '14px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    icon.on('pointerdown', () => this.scene.start('Customize'));
   }
 
   private attemptUnlock(world: WorldDef): void {

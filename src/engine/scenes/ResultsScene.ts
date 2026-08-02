@@ -20,7 +20,9 @@ export class ResultsScene extends Phaser.Scene {
   create(data: ResultsData): void {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#111318');
-    new PhoneFrame(this);
+    // showHomeButton: false - this screen already has an explicit "Home" choice alongside "Retry"
+    // as its primary CTA pair; PhoneFrame's persistent circular home button would be redundant.
+    new PhoneFrame(this, { showHomeButton: false });
 
     const { highScore, isNewHighScore } = SaveManager.recordRun(
       data.worldKey,
