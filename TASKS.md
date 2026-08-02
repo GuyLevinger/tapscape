@@ -90,11 +90,31 @@ tasks started, to avoid an architecture change partway through:
 
 ### Phone-style chrome for menus/HUD
 
-- [ ] 41. In-run HUD redesigned as a phone status bar (time/battery/signal styling, score & coins
+- [x] 41. In-run HUD redesigned as a phone status bar (time/battery/signal styling, score & coins
       integrated into that bar rather than separate boxes)
 - [ ] 42. Mute button redesigned as a speaker icon (with a muted/slashed state)
 - [ ] 43. Back/Home button redesigned as a phone nav-bar back icon
 - [ ] 44. Customize entry point redesigned as a settings-gear icon
+
+- **Task 41 replaced `UIManager`'s separately-boxed Score/Coins/World-name readouts with a single
+  full-width phone status bar** at the top of the in-run HUD, matching the smartphone-UI framing
+  the rest of the game already commits to (Home's placeholder "9:41" clock joke, phone-case bezel,
+  etc.). The bar is one dark translucent strip (0-40px) with, left to right: a static "9:41" clock
+  (decorative, same joke as Home - a real status bar's chrome doesn't change during play either);
+  score (a small white diamond marker + number) and coins (a small yellow circle + number), each
+  drawn with a fixed-width number slot so growing digit counts extend leftward without ever
+  touching a neighboring element (verified up to 5/3-digit values); and decorative signal-bar/
+  wifi/battery icons on the right edge, hand-drawn with Phaser `Graphics` primitives (`fillRect`,
+  `strokeRoundedRect`, `arc`) rather than new art, always showing "full" exactly like a real phone
+  screenshot always does regardless of anything - there's no in-game stat that maps onto them, so
+  they're chrome only, the same spirit as the always-9:41 clock. Back/Mute buttons (Tasks 42-43's
+  job to actually redesign) were only repositioned below the new bar so they don't overlap it -
+  their own appearance is untouched, since re-skinning them now would be doing later tasks' scope
+  early. Verified live via `window.__game`'s dev-only exposure (the same technique used for Task
+  40's deterministic checks) driving a real, paused `WorldScene` instance directly: the bar's
+  default 0/0 state screenshotted cleanly with every element in its intended position, and forcing
+  `UIManager.setScore(12345)`/`setCoins(789)`/`setPowerup(9)` confirmed the fixed-slot layout holds
+  with multi-digit values - no overlap with the icon cluster or into neighboring elements.
 
 ## Notes / deviations from the original docs
 
