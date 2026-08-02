@@ -44,11 +44,21 @@ const NOTIFICATION_SKIN_CHANCE = 0.2;
 // disconnected from the taller visual). Both are built instead from placement: two/three of the
 // exact same, already-correct single obstacles spaced closer than a normal reaction gap allows, so
 // clearing the *group* takes one well-timed, early jump rather than reacting to each individually.
+//
+// A single jump only clears ground obstacles for the portion of its arc where the player's feet are
+// above the obstacle's 48px hitbox - solving JUMP_VELOCITY*t - 0.5*GRAVITY*t^2 >= 48 gives a ~0.82s
+// window, not the full ~1.0s airtime. At base scroll speed (300) that's a ~247-unit hard ceiling on
+// how wide a "clear it all with one jump" formation can ever be - WIDE_BLOCK_SPACING=90 (a 211-unit
+// span) was verified (numerically, off the same physics) to have ZERO valid jump timing at all, and
+// GAP_SPACING=55 with 6 obstacles (306 units) exceeded the ceiling outright - both were reported
+// as "impossible" in real play and confirmed as a genuine bug, not a difficulty complaint. Re-tuned
+// to keep a real timing window (not just barely non-negative): 121-unit/230ms for WIDE_BLOCK,
+// 136-unit/180ms for GAP (still the wider of the two, per its "widest, most committing" intent).
 const TIGHT_PAIR_CHANCE = 0.15;
 const TIGHT_PAIR_GAP = 70;
 const WIDE_BLOCK_CHANCE = 0.12;
 const WIDE_BLOCK_COUNT = 3;
-const WIDE_BLOCK_SPACING = 90;
+const WIDE_BLOCK_SPACING = 45;
 
 // A ground obstacle (jump required) and an overhead one (jump punished) close enough together
 // that the jump needed to clear the first is still airborne when the second arrives - clearing
@@ -62,11 +72,13 @@ const SLALOM_GAP = 160;
 // A wide, near-continuous run of ground obstacles standing in for a "gap in the track" - the user
 // agreed this shouldn't be a literal hole in InfiniteGround's seamless scrolling texture (a much
 // bigger, riskier change than one hazard type warrants). Reuses the same ground obstacle, just more
-// of them, closer together, spanning near the limit of a single jump's ~1.0s airtime at base scroll
-// speed - the widest, most committing of the ground formations.
+// of them, closer together - the widest, most committing of the ground formations, but see the
+// WIDE_BLOCK comment above for why "widest" has a hard physical ceiling (~247 units at base speed)
+// well below the original 6-obstacle/55-spacing version (306 units - confirmed mathematically
+// unclearable by any jump timing, not just difficult).
 const GAP_CHANCE = 0.1;
-const GAP_COUNT = 6;
-const GAP_SPACING = 55;
+const GAP_COUNT = 4;
+const GAP_SPACING = 35;
 
 // A pulsing gate: a ground-anchored piece and an overhead-anchored piece at the same x, sharing one
 // timer, together spanning the player's entire reachable vertical range (standing/sliding hitbox up

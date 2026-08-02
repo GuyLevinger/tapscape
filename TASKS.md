@@ -439,3 +439,27 @@ tasks started, to avoid an architecture change partway through:
   `EventBus.off(event, handler, this)` pattern already proven correct for every other listener in
   this codebase (`CharacterController`'s `PLAYER_JUMPED`/`PLAYER_SLID` handlers, `AudioManager`,
   `FxManager`, `UIManager`), applied to a two-line boolean flip.
+
+- **Fixed `WIDE_BLOCK` and `GAP` (Tasks 34/36) being mathematically impossible to clear** (user
+  report, live playtesting: "too many straight obstacles makes it impossible to pass, it looks like
+  the max possible is straight 2"). Root cause: their spacing was chosen assuming a single jump's
+  full ~1.0s airtime translates directly to clearable world-distance (airtime x scrollSpeed). It
+  doesn't - a jump only clears a ground obstacle's 48px hitbox for the portion of its arc where
+  `JUMP_VELOCITY*t - 0.5*GRAVITY*t^2 >= 48`, which solves to a ~0.82s window, not the full ~1.0s
+  (the first/last ~0.09s of a jump, right after takeoff and right before landing, are still too low
+  to clear a ground obstacle). At base scroll speed that's a hard ~247-unit ceiling on how wide a
+  "clear it all with one jump" formation can ever be. `WIDE_BLOCK`'s old spacing (90, three
+  obstacles, 211-unit span) and `GAP`'s (55, six obstacles, 306-unit span) were verified - via a
+  standalone Node numerical simulation using the game's real physics constants (gravity 1200,
+  obstacle hitbox 48, confirmed by reading a live obstacle's body), not just re-derived math - to
+  have **zero valid jump-timing solutions at all** for `WIDE_BLOCK` and to exceed the ceiling
+  outright for `GAP`: genuinely impossible, not merely hard. Re-tuned with real margin rather than
+  scraping the ceiling: `WIDE_BLOCK_SPACING` 90 -> 45 (121-unit span, ~230ms of valid jump-timing
+  window) and `GAP_COUNT`/`GAP_SPACING` 6/55 -> 4/35 (136-unit span, ~180ms window) - both re-checked
+  with the same simulation before touching code, then cross-validated live against the real Arcade
+  physics bodies (not the analytical model) by scanning for a collision-free jump-timing offset
+  using each formation's actual spawned hitbox width/height/spacing: both formations found one
+  (`WIDE_BLOCK` at offset 115, `GAP` at offset 123), confirming the fix works against the real
+  engine, not just the standalone model. `SLALOM_GAP` (160, a ground+overhead pair rather than a
+  same-height multi-obstacle run, so a different constraint applies) was checked with an analogous
+  simulation and already had a genuine solution in both orderings - left unchanged.
