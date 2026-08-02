@@ -14,15 +14,23 @@ export class ObstacleManager {
   private groundY: number;
   private scrollSpeed: number;
   private textureKey: string;
+  private obstacleFreeUntilX: number;
   private obstacles: Phaser.Physics.Arcade.Image[] = [];
   private totalSpawned = 0;
   private totalRecycled = 0;
 
-  constructor(scene: Phaser.Scene, groundY: number, scrollSpeed: number, textureKey = 'obstacle') {
+  constructor(
+    scene: Phaser.Scene,
+    groundY: number,
+    scrollSpeed: number,
+    textureKey = 'obstacle',
+    obstacleFreeUntilX = 0,
+  ) {
     this.scene = scene;
     this.groundY = groundY;
     this.scrollSpeed = scrollSpeed;
     this.textureKey = textureKey;
+    this.obstacleFreeUntilX = obstacleFreeUntilX;
   }
 
   get stats(): { active: number; totalSpawned: number; totalRecycled: number } {
@@ -57,6 +65,10 @@ export class ObstacleManager {
   }
 
   private spawnObstacle(x: number): void {
+    if (x < this.obstacleFreeUntilX) {
+      return;
+    }
+
     const obstacle = this.scene.physics.add.image(x, this.groundY, this.textureKey);
     obstacle.setOrigin(0.5, 1);
     const body = obstacle.body as Phaser.Physics.Arcade.Body;

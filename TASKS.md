@@ -50,6 +50,22 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 
 ## Notes / deviations from the original docs
 
+- **Added a "Level Intro & Retry Flow" feature (post-MVP user request, not one of the 32 tasks or
+  in any GDD chapter).** A run's first attempt at a world now gets an obstacle-free runway of
+  ~2.5s (`FIRST_ATTEMPT_CLEAR_DISTANCE` in `src/config/gameplayConfig.ts`) so new players can feel
+  out jump/slide before facing anything; retrying after death (the Results screen's Retry button,
+  which now passes `isRetry: true` through to `WorldScene`) only gets ~0.75s
+  (`RETRY_CLEAR_DISTANCE`) so the retry loop stays fast, rather than replaying the same long empty
+  stretch every time. Both are expressed as world-distance, not a timer, since `ObstacleManager`
+  (now constructed with an `obstacleFreeUntilX` world-x boundary) filters individual obstacle
+  spawns below that x rather than skipping whole chunks - this keeps chunk/coin/power-up placement
+  completely untouched and generalizes to every world for free, since none of the 5 worlds' content
+  files needed to change. Verified live: a first attempt in Legbook survived ~2.8s before the first
+  obstacle (matching the "approximately 2-3 seconds" target) and a subsequent Retry from the same
+  Results screen died after a ~244-distance run (~0.8s, matching "approximately 0.5-1 second").
+  Re-entering a world from Home (rather than via Retry) always gets the long first-attempt runway
+  again - there's no persistent "have I seen this world's intro before" flag, since the request
+  frames "first attempt" per play session rather than per lifetime.
 - Using **Phaser 4** (latest, actively maintained) instead of the Phaser 3 named in the HLD —
   no v3-specific API is relied upon, and the docs simply predate v4's release.
 - **Task 20's power-up framework implements one generic effect (temporary invincibility)**, not

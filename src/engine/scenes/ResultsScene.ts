@@ -90,7 +90,7 @@ export class ResultsScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     retryButton.on('pointerdown', () => {
-      this.scene.start('World', { worldKey: data.worldKey });
+      this.scene.start('World', { worldKey: data.worldKey, isRetry: true });
     });
 
     const homeButton = this.add

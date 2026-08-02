@@ -14,7 +14,7 @@ import { CoinManager } from '@/engine/CoinManager';
 import { PowerupManager } from '@/engine/PowerupManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { UIManager } from '@/engine/UIManager';
-import { SCROLL_SPEED } from '@/config/gameplayConfig';
+import { SCROLL_SPEED, FIRST_ATTEMPT_CLEAR_DISTANCE, RETRY_CLEAR_DISTANCE } from '@/config/gameplayConfig';
 
 const GROUND_HEIGHT = 80;
 const COIN_SCORE_BONUS = 5;
@@ -40,7 +40,7 @@ export class WorldScene extends Phaser.Scene {
     super('World');
   }
 
-  create(data: { worldKey: string }): void {
+  create(data: { worldKey: string; isRetry?: boolean }): void {
     const world = Worlds.find((w) => w.key === data.worldKey) ?? Worlds[0];
     const content = getWorldContent(world.key);
     this.worldKey = world.key;
@@ -53,14 +53,27 @@ export class WorldScene extends Phaser.Scene {
 
     this.ground = new InfiniteGround(this, GROUND_HEIGHT, 'ground');
 
-    this.character = new CharacterController(this, width * 0.25, height - GROUND_HEIGHT);
+    const playerX = width * 0.25;
+    this.character = new CharacterController(this, playerX, height - GROUND_HEIGHT);
     this.physics.add.collider(this.character.gameObject, this.ground.gameObject);
     new CameraController(this, this.character.gameObject);
 
     this.scoreManager = new ScoreManager();
     this.difficultyManager = new DifficultyManager(SCROLL_SPEED);
 
-    this.obstacleManager = new ObstacleManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.obstacleTextureKey);
+    // First attempt gets a longer, welcoming obstacle-free runway to learn the controls; a retry
+    // after dying only needs enough room to react, so the retry loop stays fast (see
+    // gameplayConfig.ts for the rationale behind these two distances).
+    const clearDistance = data.isRetry ? RETRY_CLEAR_DISTANCE : FIRST_ATTEMPT_CLEAR_DISTANCE;
+    const obstacleFreeUntilX = playerX + clearDistance;
+
+    this.obstacleManager = new ObstacleManager(
+      this,
+      height - GROUND_HEIGHT,
+      SCROLL_SPEED,
+      content.obstacleTextureKey,
+      obstacleFreeUntilX,
+    );
     this.coinManager = new CoinManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.coinTextureKey);
     this.powerupManager = new PowerupManager(this, height - GROUND_HEIGHT, SCROLL_SPEED, content.powerupTextureKey);
     this.chunkManager = new ChunkManager(this, SCROLL_SPEED, height - GROUND_HEIGHT, (x, chunkWidth, chunkType) => {
