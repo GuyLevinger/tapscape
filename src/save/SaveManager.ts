@@ -89,6 +89,17 @@ class SaveManagerImpl {
     return [...this.data.worldsUnlocked];
   }
 
+  isWorldUnlocked(worldKey: string): boolean {
+    return this.data.worldsUnlocked.includes(worldKey);
+  }
+
+  unlockWorld(worldKey: string): void {
+    if (!this.data.worldsUnlocked.includes(worldKey)) {
+      this.data.worldsUnlocked.push(worldKey);
+      this.persist();
+    }
+  }
+
   get totalCoins(): number {
     return this.data.totalCoins;
   }

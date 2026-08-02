@@ -40,7 +40,7 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 26. WrongTurn world — World
 - [x] 27. Cosmetics — Customization
 - [x] 28. Achievements — Achievement system
-- [ ] 29. World unlocks — Progression
+- [x] 29. World unlocks — Progression
 
 ## Milestone 4: Release (Tasks 30-32)
 
@@ -115,6 +115,21 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   shows no repeat popups; forcing lifetime stats to their thresholds and completing another run
   unlocks three more achievements plus a cascaded "Fashionista" (own 3 cosmetics) in the same pass,
   all correctly persisted across a reload.
+
+- **Task 29 gave each world a placeholder unlock price** (200/300/400/500 coins for
+  Slowgram/ChatZap/MeTube/WrongTurn; Legbook stays free/starting) since the GDD says "additional
+  worlds are purchased with coins" but names no actual amounts, mirroring Task 27's placeholder
+  cosmetic prices. `WorldDef.unlocked` (a static bool) was replaced with `WorldDef.price` plus
+  `SaveManager.isWorldUnlocked`/`unlockWorld`, so unlock state now lives in the save like every
+  other piece of progression rather than being hardcoded per world. HomeScene shows a coin balance
+  and an "Unlock: Nc" label on locked apps; tapping one spends coins and unlocks+opens on success,
+  or shows an insufficient-funds toast (reusing the same pattern as Task 27's `CustomizeScene`)
+  without spending anything on failure. Purchases also fire `WORLD_UNLOCKED` on `EventBus` (an
+  event the HLD already listed but nothing previously emitted) and re-run
+  `AchievementManager.checkForNewAchievements()`, so "Unlock every world" can trigger immediately.
+  Verified live: an insufficient-funds click leaves the balance untouched, a successful purchase
+  deducts coins and immediately makes the world playable end-to-end (through Results, with the
+  matching "Try &lt;World&gt;" achievement firing), and the unlock persists across a reload.
 
 ## Known limitations to revisit during hardening (Task 30)
 
