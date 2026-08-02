@@ -48,6 +48,52 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
 - [x] 31. Polish — FX & animations
 - [ ] 32. Release — Production build
 
+## Milestone 5: Pre-release enhancements (user-requested, not in `docs/task-breakdown.md`)
+
+Requested 2026-08-02, before Task 32 (Release). Two independent tracks, obstacle variety first per
+user direction. Two scope questions were resolved with the user up front, before any of these
+tasks started, to avoid an architecture change partway through:
+
+- **"Safe slot" multi-lane patterns → approximated with jump/slide timing, not a real lane system.**
+  The character has no persistent lane position today (grounded / jump-arc / slide, all one lane) -
+  building real top/mid/ground lanes would be a movement-model change, not obstacle content. Combo
+  patterns instead stack hazards so the existing jump-arc and slide window create the "right moment
+  to pass" puzzle the diagram was going for.
+- **Track gaps → simulated with a wide ground-level obstacle, not real gaps in `InfiniteGround`.**
+  Real gaps would mean breaking `InfiniteGround`'s single seamless scrolling `TileSprite` (a
+  deliberate no-seams-by-construction design) into omittable segments - out of proportion to what a
+  "fall through if you don't jump" hazard actually needs. A wide obstacle gives the same
+  jump-early-or-die pressure without touching the ground system.
+
+### Obstacle variety
+
+- [x] 33. Spatial obstacle variants — low ground hurdle (jump required) vs. high suspended banner
+      (jumping into it is the wrong move - just stay grounded/keep running, or delay a jump you'd
+      otherwise take nearby)
+- [ ] 34. Tall barrier (requires a higher/well-timed jump) + wide multi-obstacle block (jump early
+      to clear the whole span)
+- [ ] 35. Slalom combo pattern — high hazard immediately followed by a low one, forcing a fast
+      jump-then-slide
+- [ ] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
+      rather than a real hole in `InfiniteGround`
+- [ ] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
+      activates
+- [ ] 38. Chasing hazard — a trailing obstacle that slowly closes in from behind, punishing
+      lingering/slow play
+- [ ] 39. Themed hazard re-skins + effects — Notification pop-up (solid barrier), Glitch Zone
+      (temporary control invert), Low Battery Zone (temporary slow), WiFi Dead Zone (temporarily
+      disables power-ups/score bonus)
+- [ ] 40. Wire hazard variety into per-difficulty chunk definitions — easy/medium/hard pattern
+      progression and combo formations (approximated safe-slot layouts per above)
+
+### Phone-style chrome for menus/HUD
+
+- [ ] 41. In-run HUD redesigned as a phone status bar (time/battery/signal styling, score & coins
+      integrated into that bar rather than separate boxes)
+- [ ] 42. Mute button redesigned as a speaker icon (with a muted/slashed state)
+- [ ] 43. Back/Home button redesigned as a phone nav-bar back icon
+- [ ] 44. Customize entry point redesigned as a settings-gear icon
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:
@@ -249,3 +295,20 @@ commits. **See root `CLAUDE.md` for the workflow this file is part of.**
   angle values sampled at precise tick offsets matched their tween targets and durations; shake,
   flash, particle emitters and floating text all appeared immediately and fully cleaned themselves
   up (destroyed/reset) within their configured lifetimes with no leftover objects.
+
+- **Task 33's "overhead" obstacle variant punishes jumping rather than requiring a duck.** The
+  original request framed it as "stay low or delay your jump," which maps naturally onto a hazard
+  positioned above standing height but within jump range - no slide/duck interaction needed at all,
+  matching the "approximate with jump/slide timing" decision made with the user before this track
+  started. `ObstacleManager.spawnObstacle` now randomly (35% chance, a placeholder mix - Task 40
+  will drive this from actual difficulty) picks `'ground'` (unchanged - anchored at `groundY`,
+  requires a jump) or `'overhead'` (anchored at `groundY - OVERHEAD_CLEARANCE`, 130px - comfortably
+  above the player's ~102px standing hitbox but within the ~150px a jump's apex reaches). Both
+  variants reuse the same per-world obstacle texture (no new art - that's Task 39's job) and the
+  same hitbox-shrink forgiveness technique from the earlier hitbox note, but trim from opposite
+  edges: ground obstacles trim off the top (what a clearing jump grazes), overhead ones trim off the
+  bottom (what a jumping player's head grazes from below) - whichever edge is actually approached
+  matters, the other edge has no gameplay reason to be forgiving. Verified live with real Arcade
+  physics bodies (not just the math): a standing/running player's body does not overlap an overhead
+  obstacle, the same body moved up by a jump's apex offset (150px) does overlap it, and a standing
+  player still overlaps a ground obstacle exactly as before (no regression).

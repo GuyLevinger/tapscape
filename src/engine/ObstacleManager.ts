@@ -24,6 +24,17 @@ const MIN_REACTION_TIME_S = 1.1;
 const HITBOX_WIDTH_RATIO = 0.65;
 const HITBOX_HEIGHT_RATIO = 0.75;
 
+// Suspended obstacles float this far above the ground (bottom edge to ground), so a standing/
+// running player's hitbox (~102px tall, see CharacterController's HITBOX_HEIGHT_RATIO) never
+// reaches them - only a jump's arc does. Comfortably above 102px so normal running never grazes
+// one; a jump's ~150px apex (JUMP_VELOCITY/gravity) still carries the player's hitbox into it.
+const OVERHEAD_CLEARANCE = 130;
+// Fraction of obstacles spawned as "overhead" (jump-punishing) rather than "ground" (jump-required)
+// variants. A basic 50/50-ish mix for Task 33 - real per-difficulty tuning is Task 40's job.
+const OVERHEAD_VARIANT_CHANCE = 0.35;
+
+export type ObstacleVariant = 'ground' | 'overhead';
+
 export class ObstacleManager {
   private scene: Phaser.Scene;
   private groundY: number;
@@ -94,12 +105,16 @@ export class ObstacleManager {
       return;
     }
 
-    const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, this.groundY, this.textureKey);
-    obstacle.setPosition(x, this.groundY);
+    const variant: ObstacleVariant = Math.random() < OVERHEAD_VARIANT_CHANCE ? 'overhead' : 'ground';
+    const y = variant === 'overhead' ? this.groundY - OVERHEAD_CLEARANCE : this.groundY;
+
+    const obstacle = this.pool.pop() ?? this.scene.physics.add.image(x, y, this.textureKey);
+    obstacle.setPosition(x, y);
     obstacle.setTexture(this.textureKey);
     obstacle.setOrigin(0.5, 1);
     obstacle.setActive(true);
     obstacle.setVisible(true);
+    obstacle.setData('variant', variant);
     const body = obstacle.body as Phaser.Physics.Arcade.Body;
     body.enable = true;
     body.setAllowGravity(false);
@@ -110,8 +125,12 @@ export class ObstacleManager {
     const fullHeight = obstacle.height;
     const hitboxWidth = fullWidth * HITBOX_WIDTH_RATIO;
     const hitboxHeight = fullHeight * HITBOX_HEIGHT_RATIO;
+    // Ground obstacles trim forgiveness off the top (what a clearing jump grazes); overhead ones
+    // trim off the bottom instead (what a jump grazes from below) - the graze edge is whichever
+    // side a jump actually approaches from for that variant.
+    const offsetY = variant === 'overhead' ? 0 : fullHeight - hitboxHeight;
     body.setSize(hitboxWidth, hitboxHeight);
-    body.setOffset((fullWidth - hitboxWidth) / 2, fullHeight - hitboxHeight);
+    body.setOffset((fullWidth - hitboxWidth) / 2, offsetY);
 
     obstacle.setVelocityX(-this.scrollSpeed);
 
