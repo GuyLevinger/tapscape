@@ -73,8 +73,9 @@ tasks started, to avoid an architecture change partway through:
 - [x] 34. "Tall barrier" (well-timed jump) + wide multi-obstacle block (jump early to clear the
       whole span) - both built as multi-obstacle placement formations, not literally taller
       obstacles (see Notes)
-- [ ] 35. Slalom combo pattern — high hazard immediately followed by a low one, forcing a fast
-      jump-then-slide
+- [x] 35. Slalom combo pattern — ground obstacle (jump required) immediately followed by an
+      overhead one (jump punished), or vice versa, forcing a jump-then-don't-jump decision rather
+      than jump-then-slide (see Notes)
 - [ ] 36. Wide ground-level "gap" hazard — approximates a track gap (see above) as an obstacle
       rather than a real hole in `InfiniteGround`
 - [ ] 37. Pulsing laser/firewall gate — on/off timing cycle with a warning indicator before it
@@ -339,3 +340,17 @@ tasks started, to avoid an architecture change partway through:
   first member), and a sampled obstacle from within a formation had the identical hitbox
   top/bottom/width already verified for Task 33's plain ground obstacle - no distortion from being
   part of a formation.
+
+- **Task 35's "Slalom" is a ground+overhead pair, not a jump+slide combo.** The request's own
+  wording was internally inconsistent ("a high hazard... jump *over* the first" - but Section 1 of
+  the same request defines "high" hazards as the ones you must *not* jump over) - there's no
+  self-consistent literal reading. Given `ground` (jump required) and `overhead` (jump punished)
+  were already built and verified in Task 33, the natural, consistent version of "jump over one,
+  then immediately get the opposite hazard" is chaining those two: `spawnSlalom` places a `ground`
+  obstacle and an `overhead` one 160 world-units apart (~0.53s at base scroll speed - well inside a
+  jump's ~1.0s airtime, so the jump taken for whichever comes first is still resolving when the
+  second arrives), with the order (ground-then-overhead or overhead-then-ground) randomized per
+  spawn. Ground-then-overhead is the harder direction - it demands jumping deliberately early on
+  the first obstacle so the player is already past the overhead one's danger window by the time it
+  arrives, rather than two independent, comfortably-spaced reactions. Verified live: forcing each
+  order produced obstacles at exactly the expected x-positions and variants in both sequences.

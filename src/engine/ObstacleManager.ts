@@ -45,6 +45,15 @@ const WIDE_BLOCK_CHANCE = 0.12;
 const WIDE_BLOCK_COUNT = 3;
 const WIDE_BLOCK_SPACING = 90;
 
+// A ground obstacle (jump required) and an overhead one (jump punished) close enough together
+// that the jump needed to clear the first is still airborne when the second arrives - clearing
+// both takes a deliberately early jump on the first so the player is already descending (or
+// landed) by the time the second passes, rather than two independent reactions. ~0.53s apart at
+// base scroll speed, comfortably inside a ~1.0s jump's airtime. Order (ground-then-overhead vs.
+// overhead-then-ground) is randomized per spawn for variety.
+const SLALOM_CHANCE = 0.12;
+const SLALOM_GAP = 160;
+
 export type ObstacleVariant = 'ground' | 'overhead';
 
 export class ObstacleManager {
@@ -109,6 +118,8 @@ export class ObstacleManager {
         this.spawnWideBlock(x);
       } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE) {
         this.spawnTightPair(x);
+      } else if (roll < WIDE_BLOCK_CHANCE + TIGHT_PAIR_CHANCE + SLALOM_CHANCE) {
+        this.spawnSlalom(x);
       } else {
         this.spawnObstacle(x);
       }
@@ -150,6 +161,18 @@ export class ObstacleManager {
       this.placeObstacle(startX + i * WIDE_BLOCK_SPACING, 'ground');
     }
     this.lastObstacleX = startX + (WIDE_BLOCK_COUNT - 1) * WIDE_BLOCK_SPACING;
+  }
+
+  // A ground+overhead pair back to back - see the constant comment above for the timing intent.
+  private spawnSlalom(centerX: number): void {
+    const startX = centerX - SLALOM_GAP / 2;
+    if (!this.canPlaceAt(startX)) {
+      return;
+    }
+    const groundFirst = Math.random() < 0.5;
+    this.placeObstacle(startX, groundFirst ? 'ground' : 'overhead');
+    this.placeObstacle(startX + SLALOM_GAP, groundFirst ? 'overhead' : 'ground');
+    this.lastObstacleX = startX + SLALOM_GAP;
   }
 
   private canPlaceAt(leadingX: number): boolean {
