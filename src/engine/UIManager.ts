@@ -48,6 +48,16 @@ export class UIManager {
     chrome.fillCircle(coinIconX, barY, ICON_GLYPH_W / 2 - 2);
     cursor -= ICON_GLYPH_W + ICON_GAP;
 
+    const coinLabel = scene.add
+      .text(cursor, barY, 'Coins', {
+        fontFamily: 'sans-serif',
+        fontSize: '14px',
+        color: '#facc15',
+      })
+      .setOrigin(1, 0.5)
+      .setScrollFactor(0);
+    cursor -= coinLabel.width + ICON_GAP;
+
     this.coinText = scene.add
       .text(coinNumberX, barY, '0', {
         fontFamily: 'sans-serif',

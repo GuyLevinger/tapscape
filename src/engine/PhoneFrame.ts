@@ -225,14 +225,26 @@ export class PhoneFrame {
     cursor = signalLeft - ICON_GAP;
 
     if (showCoins) {
-      // Coin readout: a small filled circle (matches the coin pickup's yellow tint) plus a
-      // fixed-slot, right-anchored number so the digits grow leftward without disturbing the icon.
+      // Coin readout: a "Coins" label, a small filled circle (matches the coin pickup's yellow
+      // tint), and a fixed-slot, right-anchored number so the digits grow leftward without
+      // disturbing the icon - the label was added on top of the icon (not instead of it) per user
+      // feedback that the icon alone read as unclear.
       const coinNumberX = cursor;
       cursor -= NUMBER_SLOT;
       const coinIconX = cursor - ICON_GLYPH_W / 2;
       chrome.fillStyle(0xfacc15, 1);
       chrome.fillCircle(coinIconX, barY, ICON_GLYPH_W / 2 - 2);
       cursor -= ICON_GLYPH_W + ICON_GAP;
+
+      const coinLabel = scene.add
+        .text(cursor, barY, 'Coins', {
+          fontFamily: 'sans-serif',
+          fontSize: '14px',
+          color: '#facc15',
+        })
+        .setOrigin(1, 0.5)
+        .setScrollFactor(0);
+      cursor -= coinLabel.width + ICON_GAP;
 
       scene.add
         .text(coinNumberX, barY, `${SaveManager.totalCoins}`, {

@@ -294,6 +294,15 @@ tasks started, to avoid an architecture change partway through:
   Home/World/Results show clean rounded corners with no background leak in any corner, and
   "Legbook" sitting with a clear gap below the status bar instead of overlapping it.
 
+- **Ninth round of user refinements: a "Coins" label next to the coin readout.** Per feedback that
+  the icon-only coin readout (a yellow circle + number, no text) wasn't clear enough on its own,
+  both places that build one - `PhoneFrame`'s wallet-balance version (shown on every screen except
+  World) and `UIManager`'s separate live-run-count version (World only, see the Task 41
+  follow-up note on why they're two different readouts) - now insert a small "Coins" text label
+  immediately left of the icon, added on top of the icon rather than replacing it, using the same
+  right-to-left cursor layout already used for every other bar element. Verified live: screenshots
+  of Home and World both show "Coins" spelled out next to the icon/count.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:
