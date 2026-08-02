@@ -10,6 +10,12 @@ import { SaveManager } from '@/save/SaveManager';
 // user described this as "the phone rotated 90 degrees left": a real phone's top edge (speaker +
 // camera) rotates to the left side, and its bottom edge (home button) rotates to the right side,
 // while the status bar itself stays unrotated at the top.
+//
+// The whole frame is inset from the canvas edges by SCREEN_PADDING and drawn with rounded corners
+// (a plain edge-to-edge rectangle read as an app border, not a device) - per user feedback that
+// the frame needs breathing room and a more accurate silhouette to actually look like a phone.
+const SCREEN_PADDING = 20;
+const CORNER_RADIUS = 40;
 const BEZEL_THICKNESS = 14;
 
 const STATUS_BAR_HEIGHT = 40;
@@ -29,8 +35,7 @@ const ICON_GLYPH_W = 12;
 const CLOCK_REFRESH_MS = 10_000;
 
 // The notch sits a little clear of the bezel ("slightly to the right" per the user, so it doesn't
-// crowd the border) and is vertically centered on the whole screen height, not tied to the status
-// bar at all.
+// crowd the border) and is vertically centered on the screen, not tied to the status bar at all.
 const NOTCH_LEFT_MARGIN = 8;
 const NOTCH_WIDTH = 34;
 const NOTCH_PAD = 12;
@@ -44,26 +49,26 @@ const NOTCH_HEIGHT = NOTCH_PAD * 2 + SPEAKER_H + SPEAKER_CAMERA_GAP + CAMERA_RAD
 // Physical home button, mirrored to the RIGHT edge and vertically centered - per the same "phone
 // rotated 90 degrees left" framing as the notch: a real phone's home button lives on the BOTTOM
 // edge, and rotating the device 90 degrees left carries the bottom edge to the right side.
-const HOME_BUTTON_RADIUS = 22;
-const HOME_BUTTON_RIGHT_MARGIN = 8;
+const HOME_BUTTON_RADIUS = 30;
+const HOME_BUTTON_RIGHT_MARGIN = 20;
 
 export class PhoneFrame {
   readonly statusBarHeight = STATUS_BAR_HEIGHT;
   // Vertical center of the status bar - callers adding their own content into the bar (e.g.
   // WorldScene's score/coins) vertically-center their text/icons on this.
-  readonly statusBarCenterY = BEZEL_THICKNESS + STATUS_BAR_HEIGHT / 2;
+  readonly statusBarCenterY: number;
   // y-coordinate immediately below the status bar - callers anchor their own next content row here.
-  readonly statusBarBottomY = BEZEL_THICKNESS + STATUS_BAR_HEIGHT;
+  readonly statusBarBottomY: number;
   // x-coordinate immediately left of the decorative signal/wifi/battery cluster - callers that
   // need to add their own right-aligned readouts into the status bar (WorldScene's score/coins)
   // anchor their own content starting here instead of re-deriving the same layout math.
   readonly statusBarContentRightX: number;
   // Left padding that clears the bezel - callers position their own left-aligned content here.
-  readonly contentLeftX = BEZEL_THICKNESS + 10;
+  readonly contentLeftX: number;
   // x-coordinate immediately right of the left-edge notch - callers with static content that
   // spans the screen's vertical middle (e.g. Customize's swatch grid) should start there instead
   // of at `contentLeftX`, since the notch itself sits in that band and would otherwise overlap it.
-  readonly notchRightX = BEZEL_THICKNESS + NOTCH_LEFT_MARGIN + NOTCH_WIDTH;
+  readonly notchRightX: number;
 
   // `showCoins`: whether PhoneFrame draws the wallet coin balance into the bar itself. Defaults
   // to true (Home/Results/Customize/Boot all want it there instead of a separate box). WorldScene
@@ -79,17 +84,42 @@ export class PhoneFrame {
     const showCoins = options.showCoins ?? true;
     const showHomeButton = options.showHomeButton ?? true;
 
+    // Phone body bounds (inset from the canvas edge) and screen bounds (inset further, inside the
+    // bezel) - everything below positions itself off the screen bounds, not the raw canvas, so it
+    // never bleeds into the padding or the bezel stroke itself.
+    const bodyX0 = SCREEN_PADDING;
+    const bodyY0 = SCREEN_PADDING;
+    const bodyWidth = width - SCREEN_PADDING * 2;
+    const bodyHeight = height - SCREEN_PADDING * 2;
+    const screenX0 = bodyX0 + BEZEL_THICKNESS;
+    const screenY0 = bodyY0 + BEZEL_THICKNESS;
+    const screenX1 = bodyX0 + bodyWidth - BEZEL_THICKNESS;
+    const screenY1 = bodyY0 + bodyHeight - BEZEL_THICKNESS;
+    const screenCenterY = (screenY0 + screenY1) / 2;
+
+    this.statusBarCenterY = screenY0 + STATUS_BAR_HEIGHT / 2;
+    this.statusBarBottomY = screenY0 + STATUS_BAR_HEIGHT;
+    this.contentLeftX = screenX0 + 10;
+    this.notchRightX = screenX0 + NOTCH_LEFT_MARGIN + NOTCH_WIDTH;
+
+    // A soft drop shadow (a slightly larger, faint rounded rect offset down-right) sits behind the
+    // body outline to lift it off the background, then the body itself - both just strokes, so
+    // nothing behind them (a scene's own content) is ever painted over.
+    const shadow = scene.add.graphics().setScrollFactor(0);
+    shadow.lineStyle(BEZEL_THICKNESS, 0x000000, 0.25);
+    shadow.strokeRoundedRect(bodyX0 + 3, bodyY0 + 5, bodyWidth, bodyHeight, CORNER_RADIUS);
+
     scene.add
-      .rectangle(width / 2, height / 2, width - BEZEL_THICKNESS, height - BEZEL_THICKNESS)
-      .setStrokeStyle(BEZEL_THICKNESS, getEquippedColor('phoneSkin'))
-      .setOrigin(0.5)
-      .setScrollFactor(0);
+      .graphics()
+      .setScrollFactor(0)
+      .lineStyle(BEZEL_THICKNESS, getEquippedColor('phoneSkin'), 1)
+      .strokeRoundedRect(bodyX0, bodyY0, bodyWidth, bodyHeight, CORNER_RADIUS);
 
     // The left-edge notch (drawn below) is conceptually part of the phone's body, not the
     // display - so the bar (and everything in it) starts clear of that whole column rather than
     // just the bezel, even though the notch itself only occupies the screen's vertical middle.
     const barX0 = this.notchRightX;
-    const barWidth = width - BEZEL_THICKNESS - barX0;
+    const barWidth = screenX1 - barX0;
     const barY = this.statusBarCenterY;
     scene.add
       .rectangle(barX0 + barWidth / 2, barY, barWidth, STATUS_BAR_HEIGHT, 0x000000, 0.55)
@@ -116,7 +146,7 @@ export class PhoneFrame {
     chrome.fillStyle(0xffffff, 1);
     chrome.lineStyle(1.5, 0xffffff, 1);
 
-    let cursor = width - BEZEL_THICKNESS - STATUS_BAR_PAD;
+    let cursor = screenX1 - STATUS_BAR_PAD;
     const batteryLeft = cursor - BATTERY_W;
     chrome.strokeRoundedRect(batteryLeft, barY - BATTERY_H / 2, BATTERY_W, BATTERY_H, 2);
     chrome.fillRect(cursor, barY - BATTERY_NUB_W, BATTERY_NUB_W, BATTERY_NUB_W * 2);
@@ -163,11 +193,11 @@ export class PhoneFrame {
 
     this.statusBarContentRightX = cursor;
 
-    // Left-edge speaker + camera cutout, vertically centered on the full screen height and
-    // "rotated 90 degrees" from a normal phone's top-center notch - see TASKS.md's Task 41
-    // follow-up note for why.
-    const notchX = BEZEL_THICKNESS + NOTCH_LEFT_MARGIN;
-    const notchY = height / 2 - NOTCH_HEIGHT / 2;
+    // Left-edge speaker + camera cutout, vertically centered on the screen and "rotated 90
+    // degrees" from a normal phone's top-center notch - see TASKS.md's Task 41 follow-up note for
+    // why.
+    const notchX = screenX0 + NOTCH_LEFT_MARGIN;
+    const notchY = screenCenterY - NOTCH_HEIGHT / 2;
     const notch = scene.add.graphics().setScrollFactor(0);
     notch.fillStyle(0x000000, 0.85);
     notch.fillRoundedRect(notchX, notchY, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_RADIUS);
@@ -188,8 +218,8 @@ export class PhoneFrame {
     notch.strokeCircle(notchX + NOTCH_WIDTH / 2, cameraY, CAMERA_RADIUS);
 
     if (showHomeButton) {
-      const homeX = width - BEZEL_THICKNESS - HOME_BUTTON_RIGHT_MARGIN - HOME_BUTTON_RADIUS;
-      const homeY = height / 2;
+      const homeX = screenX1 - HOME_BUTTON_RIGHT_MARGIN - HOME_BUTTON_RADIUS;
+      const homeY = screenCenterY;
       const homeButton = scene.add
         .circle(homeX, homeY, HOME_BUTTON_RADIUS, 0x1e293b)
         .setStrokeStyle(2, 0x94a3b8)

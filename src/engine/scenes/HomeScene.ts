@@ -84,20 +84,21 @@ export class HomeScene extends Phaser.Scene {
       .circle(x, y, radius, 0x374151)
       .setInteractive({ useHandCursor: true });
 
+    // Few, chunky teeth (not many thin ones) plus a clearly visible center hole - a scalloped
+    // edge with too many small notches reads as a coin/chip, not a gear.
     const gear = this.add.graphics();
-    const bodyRadius = radius * 0.32;
-    const toothOuterRadius = radius * 0.46;
-    const toothInnerRadius = radius * 0.3;
-    const teeth = 8;
-    const halfAngle = ((Math.PI * 2) / teeth) * 0.35;
+    const bodyRadius = radius * 0.42;
+    const toothOuterRadius = radius * 0.68;
+    const teeth = 6;
+    const halfAngle = ((Math.PI * 2) / teeth) * 0.42;
     gear.fillStyle(0xffffff, 1);
     for (let i = 0; i < teeth; i++) {
       const angle = i * ((Math.PI * 2) / teeth);
       gear.fillPoints(
         [
           new Phaser.Math.Vector2(
-            x + toothInnerRadius * Math.cos(angle - halfAngle),
-            y + toothInnerRadius * Math.sin(angle - halfAngle),
+            x + bodyRadius * Math.cos(angle - halfAngle),
+            y + bodyRadius * Math.sin(angle - halfAngle),
           ),
           new Phaser.Math.Vector2(
             x + toothOuterRadius * Math.cos(angle - halfAngle),
@@ -108,8 +109,8 @@ export class HomeScene extends Phaser.Scene {
             y + toothOuterRadius * Math.sin(angle + halfAngle),
           ),
           new Phaser.Math.Vector2(
-            x + toothInnerRadius * Math.cos(angle + halfAngle),
-            y + toothInnerRadius * Math.sin(angle + halfAngle),
+            x + bodyRadius * Math.cos(angle + halfAngle),
+            y + bodyRadius * Math.sin(angle + halfAngle),
           ),
         ],
         true,
@@ -117,7 +118,7 @@ export class HomeScene extends Phaser.Scene {
     }
     gear.fillCircle(x, y, bodyRadius);
     gear.fillStyle(0x374151, 1);
-    gear.fillCircle(x, y, bodyRadius * 0.4);
+    gear.fillCircle(x, y, bodyRadius * 0.5);
 
     this.add
       .text(x, y + ICON_SIZE / 2 + 16, 'Customize', {

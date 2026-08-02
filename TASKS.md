@@ -209,6 +209,31 @@ tasks started, to avoid an architecture change partway through:
   an unattended run couldn't die and transition to Results out from under the test - a documented
   quirk of this environment) confirmed a real `pointerdown` navigates from World back to Home.
 
+- **Fifth round of user refinements: padded/rounded frame silhouette, bigger/repositioned home
+  button, chunkier gear icon.** (1) The phone body no longer touches the canvas edge - a plain
+  edge-to-edge rectangle read as an app border, not a floating device. `PhoneFrame` now insets the
+  whole frame by a new `SCREEN_PADDING` (20px) and draws the body as a rounded-rect stroke
+  (`Graphics.strokeRoundedRect`, `CORNER_RADIUS` 40) instead of a sharp-cornered `Rectangle`
+  GameObject, plus a faint offset rounded-rect "shadow" stroke behind it for a bit of lift/realism.
+  Every other measurement in the file (status bar, notch, home button, `contentLeftX`,
+  `notchRightX`) was re-derived off the new inset `screenX0/X1/Y0/Y1` bounds instead of raw
+  `0`/`width`/`height`, so nothing drifted back to touching the canvas edge. A fully opaque
+  "outside the phone" backdrop colored differently from the screen was considered and rejected -
+  `PhoneFrame` draws after a scene's own content in `WorldScene` (gameplay is added before
+  `UIManager`/`PhoneFrame` in `create()`), so an opaque full-canvas fill would have painted over
+  the already-drawn ground/character/obstacles; strokes only were kept for exactly this reason.
+  (2) The home button grew (`HOME_BUTTON_RADIUS` 22 -> 30) and moved further from the edge
+  (`HOME_BUTTON_RIGHT_MARGIN` 8 -> 20, shifting it left/inward) per direct user feedback that it
+  read too small and too edge-flush. (3) `HomeScene`'s gear icon was reported as "looks like a
+  betting chip" - the previous version's 8 thin teeth close to the body radius produced a subtly
+  scalloped disc rather than a recognizable gear. Redrawn with 6 fewer, chunkier teeth extending
+  much further out (`toothOuterRadius` 0.46x -> 0.68x the icon radius) from a larger visible body
+  ring, plus a bigger center hole (0.4x -> 0.5x body radius) - the combination of a real hole and
+  prominent, countable teeth is what actually reads as "gear" rather than "coin edge." Verified
+  live: screenshots of Home/World/Customize all show the frame clearly inset with rounded corners
+  and a visible shadow, the enlarged/repositioned home button on World's right edge, and the gear
+  icon rendering as a clearly legible cog rather than a scalloped chip.
+
 ## Notes / deviations from the original docs
 
 - **Shrunk the player's and every obstacle's collision box below their sprite size** (user report:
